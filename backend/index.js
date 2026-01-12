@@ -1,70 +1,254 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+const express = require("express");
+const cors = require("cors");
+const multer = require("multer");
+const fs = require("fs");
+const axios = require("axios");
+const { google } = require("googleapis");
+require("dotenv").config();
 
-function AddProject() {
-  const [description, setDescription] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+const app = express();
 
-  const navigate = useNavigate();
+/* ================================
+   MIDDLEWARE
+================================ */
+app.use(cors());
+app.use(express.json());
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+/* ================================
+   MULTER
+================================ */
+const upload = multer({ dest: "uploads/" });
 
-    console.log("Project Details:", {
-      description,
-      startDate,
-      endDate,
-    });
+/* ================================
+   GOOGLE DRIVE AUTH
+================================ */
+const oauthClientData = JSON.parse(
+  fs.readFileSync("oauth-client.json")
+);
 
-    // Send to backend
-    try {
-      await fetch("http://localhost:5000/contractor/project", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ description, startDate, endDate }),
-      });
+const oauth2Client = new google.auth.OAuth2(
+  oauthClientData.web.client_id,
+  oauthClientData.web.client_secret,
+  oauthClientData.web.redirect_uris[0]
+);
 
-      alert("Project saved successfully!");
+const token = JSON.parse(fs.readFileSync("token.json"));
+oauth2Client.setCredentials(token);
 
-      // Redirect to dashboard after save
-      navigate("/contractor/dashboard");
+const drive = google.drive({
+  version: "v3",
+  auth: oauth2Client,
+});
 
-    } catch (error) {
-      console.error("Error adding project:", error);
-      alert("Something went wrong!");
-    }
-  };
+/* ================================
+   IN-MEMORY DATABASE (SAFE)
+================================ */
+let contractorProjects = [];
+let projectImages = [];
+let feedbacks = [];
 
-  return (
-    <div style={{ padding: "30px" }}>
-      <h2>Add New Project</h2>
+/* ================================
+   HEALTH CHECK
+================================ */
+app.get("/", (_, res) => {
+  res.send("Backend running ✅");
+});
 
-      <form onSubmit={handleSubmit}>
-        <textarea
-          placeholder="Project Description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        /><br /><br />
+/* ================================
+   GET ACTUAL ADDRESS FROM IP
+================================ */
+async function getAddressFromIP(ip) {
+  try {
+    const geo = await axios.get(`https://ipapi.co/${ip}/json/`);
+    const { latitude, longitude } = geo.data;
 
-        <label>Start Date</label><br />
-        <input
-          type="date"
-          value={startDate}
-          onChange={(e) => setStartDate(e.target.value)}
-        /><br /><br />
+    if (!latitude || !longitude) return "Address unavailable";
 
-        <label>End Date</label><br />
-        <input
-          type="date"
-          value={endDate}
-          onChange={(e) => setEndDate(e.target.value)}
-        /><br /><br />
+    const res = await axios.get(
+      "https://maps.googleapis.com/maps/api/geocode/json",
+      {
+        params: {
+          latlng: `${latitude},${longitude}`,
+          key: process.env.GOOGLE_MAPS_API_KEY,
+        },
+      }
+    );
 
-        <button type="submit">Save Project</button>
-      </form>
-    </div>
-  );
+    return (
+      res.data.results?.[0]?.formatted_address ||
+      "Address unavailable"
+    );
+  } catch {
+    return "Address unavailable";
+  }
 }
 
-export default AddProject;
+/* ================================
+   UPLOAD IMAGE + AUTO ADDRESS
+================================ */
+app.post("/upload", upload.single("photo"), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "No file received" });
+    }
+
+    const projectId = Number(req.body.projectId);
+    const contractorName =
+      req.body.contractorName || "Unknown Contractor";
+    const timestamp = new Date().toISOString();
+
+    const userIP =
+      req.headers["x-forwarded-for"] ||
+      req.socket.remoteAddress ||
+      "8.8.8.8";
+
+    const address = await getAddressFromIP(userIP);
+
+    const driveResponse = await drive.files.create({
+      requestBody: { name: req.file.originalname },
+      media: {
+        mimeType: req.file.mimetype,
+        body: fs.createReadStream(req.file.path),
+      },
+    });
+
+    const fileId = driveResponse.data.id;
+
+    await drive.permissions.create({
+      fileId,
+      requestBody: { role: "reader", type: "anyone" },
+    });
+
+    fs.unlinkSync(req.file.path);
+
+    const imageData = {
+      id: projectImages.length + 1,
+      projectId,
+      contractorName,
+      driveFileId: fileId,
+      imageUrl: `https://drive.google.com/thumbnail?id=${fileId}&sz=w500`,
+      address,
+      timestamp,
+    };
+
+    projectImages.push(imageData);
+
+    res.json({ success: true, image: imageData });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Upload failed" });
+  }
+});
+
+/* ================================
+   PROJECT ROUTES (UNCHANGED)
+================================ */
+app.post("/contractor/project", (req, res) => {
+  const { description, startDate, endDate } = req.body;
+
+  const project = {
+    id: contractorProjects.length + 1,
+    description,
+    startDate,
+    endDate,
+  };
+
+  contractorProjects.push(project);
+  res.json({ success: true, project });
+});
+
+app.get("/contractor/projects", (_, res) => {
+  res.json(contractorProjects);
+});
+
+app.put("/contractor/project/:id", (req, res) => {
+  const id = Number(req.params.id);
+  const project = contractorProjects.find(p => p.id === id);
+  if (!project) return res.status(404).json({ error: "Not found" });
+
+  project.description = req.body.description;
+  project.startDate = req.body.startDate;
+  project.endDate = req.body.endDate;
+
+  res.json({ success: true, project });
+});
+
+app.delete("/contractor/project/:id", (req, res) => {
+  const id = Number(req.params.id);
+  contractorProjects = contractorProjects.filter(p => p.id !== id);
+  projectImages = projectImages.filter(img => img.projectId !== id);
+  res.json({ success: true });
+});
+
+app.get("/contractor/project/:id/images", (req, res) => {
+  const id = Number(req.params.id);
+  res.json(projectImages.filter(img => img.projectId === id));
+});
+
+/* ================================
+   🔍 CITIZEN SEARCH
+   - AT LEAST 2 WORD MATCH
+================================ */
+app.get("/citizen/search", (req, res) => {
+  const query = req.query.q?.toLowerCase() || "";
+
+  const words = query.split(" ").filter(w => w.length > 2);
+  if (words.length < 2) return res.json([]);
+
+  const matches = projectImages.filter(img =>
+    words.every(word =>
+      img.address.toLowerCase().includes(word)
+    )
+  );
+
+  const seen = new Set();
+  const results = [];
+
+  for (let img of matches) {
+    if (!seen.has(img.projectId)) {
+      const project = contractorProjects.find(
+        p => p.id === img.projectId
+      );
+
+      results.push({
+        projectId: img.projectId,
+        description: project?.description || "",
+        address: img.address,
+        thumbnail: img.imageUrl,
+        contractorName: img.contractorName,
+      });
+
+      seen.add(img.projectId);
+    }
+  }
+
+  res.json(results);
+});
+
+/* ================================
+   FEEDBACK / COMPLAINT (SAFE)
+================================ */
+app.post("/citizen/feedback", (req, res) => {
+  feedbacks.push({
+    id: feedbacks.length + 1,
+    ...req.body,
+    time: new Date().toISOString(),
+  });
+
+  res.json({ success: true });
+});
+
+/* ================================
+   AUTH (DUMMY)
+================================ */
+app.post("/citizen/login", (_, res) => res.json({ success: true }));
+app.post("/citizen/signup", (_, res) => res.json({ success: true }));
+app.post("/contractor/login", (_, res) => res.json({ success: true }));
+app.post("/contractor/signup", (_, res) => res.json({ success: true }));
+
+/* ================================
+   START SERVER
+================================ */
+app.listen(5000, () =>
+  console.log("Server running → http://localhost:5000")
+);
