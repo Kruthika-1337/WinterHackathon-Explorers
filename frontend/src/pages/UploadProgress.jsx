@@ -1,19 +1,44 @@
 // UploadProgress.jsx
 import { useParams, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import "./UploadProgress.css";
 
 function UploadProgress() {
   const { projectId } = useParams();
   const navigate = useNavigate();
 
   const [photos, setPhotos] = useState([]);
+  const [message, setMessage] = useState("");
+  const [location, setLocation] = useState(null);
   const [uploading, setUploading] = useState(false);
+
+  const getLocation = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation not supported");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLocation({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+        });
+      },
+      () => alert("Location permission denied")
+    );
+  };
 
   const handleUpload = async (e) => {
     e.preventDefault();
 
+    if (!location) {
+      alert("Capture location first");
+      return;
+    }
+
     if (photos.length === 0) {
-      alert("Please select one or more photos");
+      alert("Select at least one image");
       return;
     }
 
@@ -26,39 +51,71 @@ function UploadProgress() {
         formData.append("projectId", projectId);
         formData.append("contractorName", "Contractor"); // replace later when login works
 
-        await fetch("http://localhost:5000/upload", {
+        const res = await fetch("http://localhost:5000/upload", {
           method: "POST",
           body: formData,
         });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          setMessage(`❌ ${data.error}`);
+          setUploading(false);
+          return;
+        }
       }
 
-      navigate("/contractor/dashboard");
+      setMessage("✅ Progress uploaded successfully");
+      setTimeout(() => navigate("/contractor/dashboard"), 1500);
     } catch (err) {
-      console.error("UPLOAD ERROR:", err);
-      alert("Upload failed");
+      setMessage("❌ Upload failed");
     } finally {
       setUploading(false);
     }
   };
 
   return (
-    <div style={{ padding: 30 }}>
-      <h2>Upload Work Progress</h2>
+    <div className="upload-page">
+      <div className="upload-card">
+        <h2>📤 Upload Weekly Progress</h2>
+        <p className="subtitle">
+          Upload geo-tagged work proof images (allowed once per week)
+        </p>
 
-      <form onSubmit={handleUpload}>
-        <input
-          type="file"
-          multiple
-          accept="image/*"
-          onChange={(e) => setPhotos([...e.target.files])}
-        />
+        <div className="location-box">
+          <button onClick={getLocation}>
+            📍 Capture Location
+          </button>
 
-        <br /><br />
+          {location && (
+            <span className="location-ok">
+              ✔ Location Locked
+            </span>
+          )}
+        </div>
 
-        <button type="submit" disabled={uploading}>
-          {uploading ? "Uploading..." : "Upload"}
-        </button>
-      </form>
+        <form onSubmit={handleUpload}>
+          <div className="file-box">
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={(e) => setPhotos([...e.target.files])}
+            />
+            <small>{photos.length} file(s) selected</small>
+          </div>
+
+          <button
+            type="submit"
+            className="upload-btn"
+            disabled={uploading}
+          >
+            {uploading ? "Uploading..." : "Upload Images"}
+          </button>
+        </form>
+
+        {message && <p className="message">{message}</p>}
+      </div>
     </div>
   );
 }

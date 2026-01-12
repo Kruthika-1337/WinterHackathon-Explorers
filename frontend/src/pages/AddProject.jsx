@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import "./AddProject.css";
 
 function AddProject() {
   const navigate = useNavigate();
@@ -11,11 +12,6 @@ function AddProject() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!description || !startDate || !endDate) {
-      alert("Please fill all fields");
-      return;
-    }
 
     try {
       setLoading(true);
@@ -32,55 +28,59 @@ function AddProject() {
         }),
       });
 
-      const data = await res.json();
-
-      if (data.success) {
-        alert("Project added successfully ✅");
-        navigate("/contractor/dashboard");
-      } else {
-        alert("Failed to add project");
-      }
-    } catch (err) {
-      console.error("Add project error:", err);
-      alert("Server error");
-    } finally {
-      setLoading(false);
+      alert("✅ Project submitted for authority approval");
+      navigate("/contractor/dashboard");
+    } catch (error) {
+      alert("❌ Something went wrong");
     }
   };
 
   return (
-    <div style={{ padding: "30px", maxWidth: "500px" }}>
-      <h2>Add New Project</h2>
+    <div className="add-project-page">
+      <div className="add-project-card">
+        <h2>Add New Project</h2>
+        <p className="subtitle">
+          Fill in project details. Uploads allowed only after authority approval.
+        </p>
 
-      <form onSubmit={handleSubmit}>
-        <label>Project Description</label>
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          rows={4}
-          style={{ width: "100%", marginBottom: "15px" }}
-        />
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label>Project Description</label>
+            <textarea
+              placeholder="Eg: Road widening near City Circle"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              required
+            />
+          </div>
 
-        <label>Start Date</label>
-        <input
-          type="date"
-          value={startDate}
-          onChange={(e) => setStartDate(e.target.value)}
-          style={{ width: "100%", marginBottom: "15px" }}
-        />
+          <div className="form-row">
+            <div className="form-group">
+              <label>Start Date</label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                required
+              />
+            </div>
 
-        <label>End Date</label>
-        <input
-          type="date"
-          value={endDate}
-          onChange={(e) => setEndDate(e.target.value)}
-          style={{ width: "100%", marginBottom: "20px" }}
-        />
+            <div className="form-group">
+              <label>End Date</label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                required
+              />
+            </div>
+          </div>
 
-        <button type="submit" disabled={loading}>
-          {loading ? "Saving..." : "Save Project"}
-        </button>
-      </form>
+          <button type="submit" className="submit-btn">
+            🚀 Submit Project
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

@@ -28,21 +28,38 @@ function Landing() {
         navigate("/contractor/dashboard");
       }
     } catch (error) {
-      alert("Login failed. Try again.");
-    }
+  if (error.code === "auth/cancelled-popup-request") {
+    // 🔕 Ignore this harmless dev-only warning
+    return;
+  }
+
+  console.error("Login error:", error);
+  alert("Google login failed. Please try again.");
+}
+
+
   };
 
   return (
     <div className="landing">
       {/* Navbar */}
-      <nav className="navbar">
-        <h2>Work<span>Proof</span></h2>
-        <ul>
-          <li>Features</li>
-          <li>About</li>
-          <li>Contact</li>
-        </ul>
-      </nav>
+     <nav className="navbar">
+  <div className="nav-left">
+    <h2>Work<span>Proof</span></h2>
+    <ul>
+      <li>Features</li>
+      <li>About</li>
+      <li>Contact</li>
+    </ul>
+  </div>
+
+  <button
+    className="authority-btn"
+    onClick={() => navigate("/admin")}
+  >
+    🛡 Authority Login
+  </button>
+</nav>
 
       {/* Hero Section */}
       <div className="hero">
@@ -92,6 +109,8 @@ function Landing() {
               >
                 Sign in with Google
               </button>
+              
+              
               
             </div>
           </div>

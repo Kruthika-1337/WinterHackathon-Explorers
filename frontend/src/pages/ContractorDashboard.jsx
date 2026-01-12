@@ -1,51 +1,115 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import "./ContractorDashboard.css";
 
 function ContractorDashboard() {
   const navigate = useNavigate();
+
   const [projects, setProjects] = useState([]);
+  const [stats, setStats] = useState({}); // ✅ FIXED
 
   useEffect(() => {
-    fetch("http://localhost:5000/contractor/projects")
-      .then((res) => res.json())
-      .then(setProjects)
-      .catch(console.error);
+    const loadData = async () => {
+      try {
+        const res = await fetch("http://localhost:5000/contractor/projects");
+        const data = await res.json();
+        setProjects(data);
+
+        const statsObj = {};
+
+        for (let p of data) {
+          const imgRes = await fetch(
+            `http://localhost:5000/contractor/project/${p.id}/images`
+          );
+          const images = await imgRes.json();
+
+          statsObj[p.id] = {
+            total: images.length,
+            latestImage:
+              images.length > 0 ? images[images.length - 1].imageUrl : null,
+            progress: Math.min(images.length * 20, 100), // 5 uploads = 100%
+          };
+        }
+
+        setStats(statsObj);
+      } catch (err) {
+        console.error("Dashboard load error:", err);
+      }
+    };
+
+    loadData();
   }, []);
 
-  const deleteProject = async (id) => {
-    if (!window.confirm("Delete this permanently?")) return;
-    await fetch(`http://localhost:5000/contractor/project/${id}`, { method: "DELETE" });
-    setProjects(projects.filter((p) => p.id !== id));
-  };
-
   return (
-    <div style={{ padding: "30px" }}>
-      <h2>Contractor Dashboard 👷</h2>
-
-      <button onClick={() => navigate("/contractor/add-project")}>
-        ➕ Add Project
-      </button>
-
-      <h3 style={{ marginTop: "20px" }}>Your Projects</h3>
-
-      {projects.length === 0 ? <p>No projects yet.</p> : null}
-
-      {projects.map((p) => (
-        <div key={p.id} style={{ border: "1px solid #ccc", padding: 15, marginBottom: 15 }}>
-          <strong>{p.description}</strong><br/>
-          🗓 {p.startDate} → {p.endDate}
-          <br /><br />
-          <button onClick={() => navigate(`/contractor/project/${p.id}/upload`)}>📸 Upload</button>
-          <button onClick={() => navigate(`/contractor/project/${p.id}/images`)}
-            style={{ marginLeft: 10 }}>🖼 View Images</button>
-          <button onClick={() => navigate(`/contractor/project/${p.id}/edit`)}
-            style={{ marginLeft: 10 }}>✏ Edit</button>
-          <button onClick={() => navigate(`/contractor/project/${p.id}/feedback`)}
-            style={{ marginLeft: 10 }}>📢 Feedback</button>
-          <button onClick={() => deleteProject(p.id)}
-            style={{ marginLeft: 10, color: "red" }}>🗑 Delete</button>
+    <div className="contractor-dashboard">
+      {/* Header */}
+      <div className="dashboard-header">
+        <div>
+          <h2>👷 Contractor Dashboard</h2>
+          <p>Manage your government projects</p>
         </div>
-      ))}
+
+        <button
+          className="add-project-btn"
+          onClick={() => navigate("/contractor/add-project")}
+        >
+          + Add Project
+        </button>
+      </div>
+
+      {/* Projects */}
+      {projects.length === 0 ? (
+        <p>No projects added yet.</p>
+      ) : (
+        <div className="project-grid">
+          {projects.map((p) => (
+            <div className="project-card" key={p.id}>
+              <h4>{p.description}</h4>
+
+              {stats[p.id]?.latestImage ? (
+                <img
+                  src={stats[p.id].latestImage}
+                  alt="progress"
+                  className="project-thumb"
+                />
+              ) : (
+                <div className="no-image">No uploads yet</div>
+              )}
+
+              <p>📸 Uploads: {stats[p.id]?.total || 0}</p>
+
+              <div className="progress-bar">
+                <div
+                  className="progress-fill"
+                  style={{
+                    width: `${stats[p.id]?.progress || 0}%`,
+                  }}
+                />
+              </div>
+
+              <small>{stats[p.id]?.progress || 0}% completed</small>
+
+              <div className="project-actions">
+                <button
+                  onClick={() =>
+                    navigate(`/contractor/project/${p.id}/upload`)
+                  }
+                >
+                  Upload
+                </button>
+
+                <button
+                  onClick={() =>
+                    navigate(`/contractor/project/${p.id}/images`)
+                  }
+                >
+                  View Images
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
