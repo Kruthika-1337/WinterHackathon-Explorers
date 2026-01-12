@@ -8,17 +8,13 @@ function UploadProgress() {
   const [photos, setPhotos] = useState([]);
   const [message, setMessage] = useState("");
   const [location, setLocation] = useState(null);
-  const [loadingLocation, setLoadingLocation] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  // 📍 Capture location
   const getLocation = () => {
     if (!navigator.geolocation) {
       alert("Geolocation not supported");
       return;
     }
-
-    setLoadingLocation(true);
 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -26,25 +22,21 @@ function UploadProgress() {
           lat: pos.coords.latitude,
           lng: pos.coords.longitude,
         });
-        setLoadingLocation(false);
       },
-      () => {
-        alert("Location permission denied");
-        setLoadingLocation(false);
-      }
+      () => alert("Location permission denied")
     );
   };
 
   const handleUpload = async (e) => {
     e.preventDefault();
 
-    if (photos.length === 0) {
-      alert("Please select images");
+    if (!location) {
+      alert("Capture location first");
       return;
     }
 
-    if (!location) {
-      alert("Please capture location first");
+    if (photos.length === 0) {
+      alert("Select images");
       return;
     }
 
@@ -59,19 +51,22 @@ function UploadProgress() {
         formData.append("longitude", location.lng);
         formData.append("timestamp", new Date().toISOString());
 
-        await fetch("http://localhost:5000/upload", {
+        const res = await fetch("http://localhost:5000/upload", {
           method: "POST",
           body: formData,
         });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          setMessage(`❌ ${data.error}`);
+          setUploading(false);
+          return;
+        }
       }
 
-      setMessage("✅ All images uploaded successfully");
-
-      // ✅ AUTO REDIRECT
-      setTimeout(() => {
-        navigate("/contractor/dashboard");
-      }, 1000);
-
+      setMessage("✅ Upload successful");
+      setTimeout(() => navigate("/contractor/dashboard"), 1500);
     } catch (err) {
       console.error(err);
       setMessage("❌ Upload failed");
@@ -85,19 +80,13 @@ function UploadProgress() {
       <h2>Upload Progress</h2>
       <p>Project ID: {projectId}</p>
 
-      <button onClick={getLocation} disabled={loadingLocation}>
-        {loadingLocation ? "📍 Capturing location..." : "📍 Capture Location"}
-      </button>
+      <button onClick={getLocation}>📍 Capture Location</button>
 
       {location && (
         <p style={{ color: "green" }}>
-          ✔ Location locked<br />
-          Lat: {location.lat}<br />
-          Lng: {location.lng}
+          Location locked ✔
         </p>
       )}
-
-      <br />
 
       <form onSubmit={handleUpload}>
         <input
@@ -108,12 +97,11 @@ function UploadProgress() {
         />
         <br /><br />
 
-        <button type="submit" disabled={!location || uploading}>
+        <button type="submit" disabled={uploading}>
           {uploading ? "Uploading..." : "Upload Images"}
         </button>
       </form>
 
-      <br />
       <p>{message}</p>
     </div>
   );

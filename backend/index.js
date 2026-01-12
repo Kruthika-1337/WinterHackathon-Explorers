@@ -13,7 +13,7 @@ app.use(cors());
 app.use(express.json());
 
 /* ================================
-   MULTER
+   MULTER CONFIG
 ================================ */
 const upload = multer({ dest: "uploads/" });
 
@@ -39,7 +39,7 @@ const drive = google.drive({
 });
 
 /* ================================
-   IN-MEMORY DATABASE (SINGLE SOURCE)
+   IN-MEMORY DATABASE
 ================================ */
 let contractorProjects = [];
 let projectImages = [];
@@ -52,7 +52,59 @@ app.get("/", (req, res) => {
 });
 
 /* ================================
-   UPLOAD IMAGE + GEO TAG
+   CREATE PROJECT (CONTRACTOR)
+   → DEFAULT STATUS = PENDING
+================================ */
+app.post("/contractor/project", (req, res) => {
+  const { description, startDate, endDate } = req.body;
+
+  const newProject = {
+    id: contractorProjects.length + 1,
+    description,
+    startDate,
+    endDate,
+    status: "pending", // 🔒 authority approval required
+  };
+
+  contractorProjects.push(newProject);
+  res.json({ success: true, project: newProject });
+});
+
+/* ================================
+   GET CONTRACTOR PROJECTS
+================================ */
+app.get("/contractor/projects", (req, res) => {
+  res.json(contractorProjects);
+});
+
+/* ================================
+   ADMIN: VIEW PENDING PROJECTS
+================================ */
+app.get("/admin/projects", (req, res) => {
+  const pending = contractorProjects.filter(
+    p => p.status === "pending"
+  );
+  res.json(pending);
+});
+
+/* ================================
+   ADMIN: APPROVE PROJECT
+================================ */
+app.put("/admin/project/:id/approve", (req, res) => {
+  const id = Number(req.params.id);
+  const project = contractorProjects.find(p => p.id === id);
+
+  if (!project) {
+    return res.status(404).json({ error: "Project not found" });
+  }
+
+  project.status = "approved";
+  res.json({ success: true, project });
+});
+
+/* ================================
+   UPLOAD IMAGE (LOCKED 🔒)
+   → ONLY IF PROJECT IS APPROVED
 ================================ */
 app.post("/upload", upload.single("photo"), async (req, res) => {
   try {
@@ -62,6 +114,18 @@ app.post("/upload", upload.single("photo"), async (req, res) => {
       return res.status(400).json({ error: "No file received" });
     }
 
+    // 🔒 CHECK PROJECT STATUS
+    const project = contractorProjects.find(
+      p => p.id === Number(projectId)
+    );
+
+    if (!project || project.status !== "approved") {
+      return res.status(403).json({
+        error: "Project not approved by authority yet",
+      });
+    }
+
+    // ⬇️ UPLOAD TO GOOGLE DRIVE
     const driveResponse = await drive.files.create({
       requestBody: { name: req.file.originalname },
       media: {
@@ -83,7 +147,6 @@ app.post("/upload", upload.single("photo"), async (req, res) => {
     const imageData = {
       id: projectImages.length + 1,
       projectId: Number(projectId),
-      driveFileId: fileId,
       imageUrl,
       latitude,
       longitude,
@@ -92,65 +155,11 @@ app.post("/upload", upload.single("photo"), async (req, res) => {
 
     projectImages.push(imageData);
     res.json({ success: true, image: imageData });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
   }
-});
-
-/* ================================
-   CREATE PROJECT
-================================ */
-app.post("/contractor/project", (req, res) => {
-  const { description, startDate, endDate } = req.body;
-
-  const newProject = {
-    id: contractorProjects.length + 1,
-    description,
-    startDate,
-    endDate,
-  };
-
-  contractorProjects.push(newProject);
-  res.json({ success: true, project: newProject });
-});
-
-/* ================================
-   GET PROJECTS
-================================ */
-app.get("/contractor/projects", (req, res) => {
-  res.json(contractorProjects);
-});
-
-/* ================================
-   UPDATE PROJECT ✅ FIXED
-================================ */
-app.put("/contractor/project/:id", (req, res) => {
-  const id = Number(req.params.id);
-  const { description, startDate, endDate } = req.body;
-
-  const project = contractorProjects.find(p => p.id === id);
-  if (!project) {
-    return res.status(404).json({ error: "Project not found" });
-  }
-
-  project.description = description;
-  project.startDate = startDate;
-  project.endDate = endDate;
-
-  res.json({ success: true, project });
-});
-
-/* ================================
-   DELETE PROJECT
-================================ */
-app.delete("/contractor/project/:id", (req, res) => {
-  const id = Number(req.params.id);
-
-  contractorProjects = contractorProjects.filter(p => p.id !== id);
-  projectImages = projectImages.filter(img => img.projectId !== id);
-
-  res.json({ success: true });
 });
 
 /* ================================
@@ -162,7 +171,7 @@ app.get("/contractor/project/:projectId/images", (req, res) => {
 });
 
 /* ================================
-   AUTH (DUMMY)
+   DUMMY AUTH (FOR NOW)
 ================================ */
 app.post("/citizen/login", (_, res) => res.json({ success: true }));
 app.post("/citizen/signup", (_, res) => res.json({ success: true }));

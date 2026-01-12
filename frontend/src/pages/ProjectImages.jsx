@@ -21,9 +21,12 @@ function ProjectImages() {
         <p>No images uploaded yet.</p>
       ) : (
         images.map((img, index) => {
-          const fileId = img.fileId || img.driveFileId;
+          // ✅ EXTRACT FILE ID FROM imageUrl
+          const fileId = img.imageUrl?.split("id=")[1];
 
           if (!fileId) return null;
+
+          const thumbnailUrl = `https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`;
 
           return (
             <div
@@ -36,15 +39,15 @@ function ProjectImages() {
                 maxWidth: "320px",
               }}
             >
-              <img
-                src={`https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`}
-                alt="Work Progress"
-                style={{
-                  width: "100%",
-                  borderRadius: "6px",
-                  marginBottom: "10px",
-                }}
-              />
+             <iframe
+  src={`https://drive.google.com/file/d/${fileId}/preview`}
+  width="100%"
+  height="300"
+  style={{ borderRadius: "6px", border: "none" }}
+  title="Work Progress"
+/>
+
+
 
               <p style={{ fontSize: "14px" }}>
                 📅 <strong>Time:</strong>{" "}

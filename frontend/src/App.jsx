@@ -12,23 +12,45 @@ import UploadProgress from "./pages/UploadProgress";
 import ProjectImages from "./pages/ProjectImages";
 import ProjectProgress from "./pages/ProjectProgress";
 import EditProject from "./pages/EditProject";
+import AdminDashboard from "./pages/AdminDashboard";
+import AuthorityLogin from "./pages/AuthorityLogin";
+
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Landing />} />
+
         <Route path="/citizen/login" element={<CitizenLogin />} />
         <Route path="/citizen/signup" element={<CitizenSignup />} />
+        <Route path="/citizen/dashboard" element={<CitizenDashboard />} />
+
         <Route path="/contractor/login" element={<ContractorLogin />} />
         <Route path="/contractor/signup" element={<ContractorSignup />} />
         <Route path="/contractor/dashboard" element={<ContractorDashboard />} />
-        <Route path="/citizen/dashboard" element={<CitizenDashboard />} />
         <Route path="/contractor/add-project" element={<AddProject />} />
-        <Route path="/contractor/project/:projectId/upload"element={<UploadProgress />}/>
-        <Route path="/contractor/project/:projectId/images"element={<ProjectImages />}/>
-        <Route path="/contractor/project/:projectId/progress"element={<ProjectProgress />}/>
-        <Route path="/contractor/project/:projectId/edit"element={<EditProject />}/>
-        
+
+        <Route
+          path="/contractor/project/:projectId/upload"
+          element={<UploadProgress />}
+        />
+        <Route
+          path="/contractor/project/:projectId/images"
+          element={<ProjectImages />}
+        />
+        <Route
+          path="/contractor/project/:projectId/progress"
+          element={<ProjectProgress />}
+        />
+        <Route
+          path="/contractor/project/:projectId/edit"
+          element={<EditProject />}
+        />
+
+        {/* AUTHORITY */}
+<Route path="/admin" element={<AuthorityLogin />} />
+     
+      <Route path="/admin1" element={<AdminDashboard />} />
       </Routes>
     </BrowserRouter>
   );

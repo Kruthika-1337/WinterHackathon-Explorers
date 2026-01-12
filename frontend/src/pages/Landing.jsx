@@ -92,6 +92,16 @@ function Landing() {
               >
                 Sign in with Google
               </button>
+               <button
+          onClick={() => navigate("/admin")}
+          style={{
+            backgroundColor: "#1976d2",
+            color: "white",
+            fontWeight: "bold",
+          }}
+        >
+          Authority Login
+        </button>
               
             </div>
           </div>
