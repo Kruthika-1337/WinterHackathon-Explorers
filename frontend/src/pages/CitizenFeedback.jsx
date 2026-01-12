@@ -1,56 +1,120 @@
 import { useState } from "react";
 
-function CitizenFeedback({ projectId }) {
-  const [text, setText] = useState("");
-  const [type, setType] = useState("feedback");
+function CitizenFeedback({ projectId, onClose }) {
+  const [username, setUsername] = useState("");
   const [message, setMessage] = useState("");
+  const [type, setType] = useState("feedback");
+  const [photo, setPhoto] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState("");
 
-  const submitFeedback = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    await fetch("http://localhost:5000/citizen/feedback", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        projectId,
-        type,
-        text,
-      }),
-    });
+    if (!username || !message) {
+      alert("Please enter username and message");
+      return;
+    }
 
-    setMessage("✅ Submitted successfully");
-    setText("");
+    setLoading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("username", username);
+      formData.append("message", message);
+      formData.append("type", type);
+
+      if (photo) {
+        formData.append("photo", photo);
+      }
+
+      const res = await fetch(
+        `http://localhost:5000/citizen/project/${projectId}/feedback`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      const data = await res.json();
+
+      if (data.success) {
+        setSuccess("✅ Feedback submitted successfully");
+        setMessage("");
+        setPhoto(null);
+      } else {
+        alert("Submission failed");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error submitting feedback");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div style={{ marginTop: "40px" }}>
+    <div
+      style={{
+        border: "1px solid #ccc",
+        padding: "20px",
+        borderRadius: "8px",
+        marginTop: "20px",
+        background: "#f9f9f9",
+      }}
+    >
       <h3>Feedback / Complaint</h3>
 
-      <form onSubmit={submitFeedback}>
+      <form onSubmit={handleSubmit}>
+        <input
+          type="text"
+          placeholder="Your Name"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          style={{ width: "100%", marginBottom: "10px" }}
+        />
+
         <select
           value={type}
           onChange={(e) => setType(e.target.value)}
+          style={{ width: "100%", marginBottom: "10px" }}
         >
           <option value="feedback">Feedback</option>
           <option value="complaint">Complaint</option>
         </select>
 
-        <br /><br />
-
         <textarea
-          required
-          placeholder="Write here..."
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          style={{ width: "300px", height: "80px" }}
+          placeholder="Write your message..."
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          rows={4}
+          style={{ width: "100%", marginBottom: "10px" }}
+        />
+
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(e) => setPhoto(e.target.files[0])}
         />
 
         <br /><br />
 
-        <button type="submit">Submit</button>
+        <button type="submit" disabled={loading}>
+          {loading ? "Submitting..." : "Submit"}
+        </button>
+
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            style={{ marginLeft: "10px" }}
+          >
+            Close
+          </button>
+        )}
       </form>
 
-      <p>{message}</p>
+      {success && <p style={{ color: "green" }}>{success}</p>}
     </div>
   );
 }

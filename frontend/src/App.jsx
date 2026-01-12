@@ -26,6 +26,11 @@ function App() {
         <Route path="/contractor/project/:projectId/upload"element={<UploadProgress />}/>
         <Route path="/contractor/project/:projectId/images"element={<ProjectImages />}/>
         <Route path="/contractor/project/:projectId/edit"element={<EditProject />}/>
+        <Route path="/citizen/dashboard" element={<CitizenDashboard />} />
+        <Route path="/citizen/project/:id" element={<CitizenProjectView />} />
+        <Route path="/citizen/project/:id/feedback" element={<CitizenFeedback />} />
+        <Route path="/citizen/project/:projectId/images"element={<CitizenImages />}/>
+
         
       </Routes>
     </BrowserRouter>
