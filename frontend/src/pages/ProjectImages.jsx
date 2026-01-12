@@ -53,11 +53,11 @@ function ProjectImages() {
                   : "N/A"}
               </p>
 
-              <p style={{ fontSize: "14px" }}>
-                📍 <strong>Location:</strong><br />
-                Lat: {img.latitude || "N/A"}<br />
-                Lng: {img.longitude || "N/A"}
+              <p>
+                📍 <strong>Address:</strong><br />
+                {img.address || "Address unavailable"}
               </p>
+
             </div>
           );
         })

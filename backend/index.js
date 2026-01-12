@@ -2,12 +2,14 @@ const express = require("express");
 const cors = require("cors");
 const multer = require("multer");
 const fs = require("fs");
+const axios = require("axios");
 const { google } = require("googleapis");
+require("dotenv").config();
 
 const app = express();
 
 /* ================================
-   MIDDLEWARES
+   MIDDLEWARE
 ================================ */
 app.use(cors());
 app.use(express.json());
@@ -39,7 +41,7 @@ const drive = google.drive({
 });
 
 /* ================================
-   IN-MEMORY DATABASE (SINGLE SOURCE)
+   IN-MEMORY DATABASE
 ================================ */
 let contractorProjects = [];
 let projectImages = [];
@@ -47,20 +49,49 @@ let projectImages = [];
 /* ================================
    HEALTH CHECK
 ================================ */
-app.get("/", (req, res) => {
-  res.send("Backend is running ✅");
+app.get("/", (_, res) => {
+  res.send("Backend running ✅");
 });
 
 /* ================================
-   UPLOAD IMAGE + GEO TAG
+   GET ADDRESS FROM IP
+================================ */
+async function getAddressFromIP(ip) {
+  try {
+    const geo = await axios.get(`https://ipapi.co/${ip}/json/`);
+    const { latitude, longitude } = geo.data;
+
+    const res = await axios.get(
+      `https://maps.googleapis.com/maps/api/geocode/json`,
+      {
+        params: {
+          latlng: `${latitude},${longitude}`,
+          key: process.env.GOOGLE_MAPS_API_KEY,
+        },
+      }
+    );
+
+    return res.data.results[0]?.formatted_address || "Address unavailable";
+  } catch {
+    return "Address unavailable";
+  }
+}
+
+/* ================================
+   UPLOAD IMAGE + ADDRESS
 ================================ */
 app.post("/upload", upload.single("photo"), async (req, res) => {
   try {
-    const { projectId, latitude, longitude, timestamp } = req.body;
-
     if (!req.file) {
       return res.status(400).json({ error: "No file received" });
     }
+
+    const projectId = Number(req.body.projectId);
+    const timestamp = new Date().toISOString();
+
+    // 🔥 Get address automatically
+    const userIP = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+    const address = await getAddressFromIP(userIP);
 
     const driveResponse = await drive.files.create({
       requestBody: { name: req.file.originalname },
@@ -77,88 +108,70 @@ app.post("/upload", upload.single("photo"), async (req, res) => {
       requestBody: { role: "reader", type: "anyone" },
     });
 
-    const imageUrl = `https://drive.google.com/uc?export=view&id=${fileId}`;
     fs.unlinkSync(req.file.path);
 
     const imageData = {
       id: projectImages.length + 1,
-      projectId: Number(projectId),
+      projectId,
       driveFileId: fileId,
-      imageUrl,
-      latitude,
-      longitude,
+      imageUrl: `https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`,
+      address,
       timestamp,
     };
 
     projectImages.push(imageData);
+
     res.json({ success: true, image: imageData });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Upload failed" });
   }
 });
 
 /* ================================
-   CREATE PROJECT
+   PROJECT ROUTES
 ================================ */
 app.post("/contractor/project", (req, res) => {
   const { description, startDate, endDate } = req.body;
 
-  const newProject = {
+  const project = {
     id: contractorProjects.length + 1,
     description,
     startDate,
     endDate,
   };
 
-  contractorProjects.push(newProject);
-  res.json({ success: true, project: newProject });
+  contractorProjects.push(project);
+  res.json({ success: true, project });
 });
 
-/* ================================
-   GET PROJECTS
-================================ */
-app.get("/contractor/projects", (req, res) => {
+app.get("/contractor/projects", (_, res) => {
   res.json(contractorProjects);
 });
 
-/* ================================
-   UPDATE PROJECT ✅ FIXED
-================================ */
 app.put("/contractor/project/:id", (req, res) => {
   const id = Number(req.params.id);
-  const { description, startDate, endDate } = req.body;
-
   const project = contractorProjects.find(p => p.id === id);
-  if (!project) {
-    return res.status(404).json({ error: "Project not found" });
-  }
 
-  project.description = description;
-  project.startDate = startDate;
-  project.endDate = endDate;
+  if (!project) return res.status(404).json({ error: "Not found" });
+
+  project.description = req.body.description;
+  project.startDate = req.body.startDate;
+  project.endDate = req.body.endDate;
 
   res.json({ success: true, project });
 });
 
-/* ================================
-   DELETE PROJECT
-================================ */
 app.delete("/contractor/project/:id", (req, res) => {
   const id = Number(req.params.id);
-
   contractorProjects = contractorProjects.filter(p => p.id !== id);
   projectImages = projectImages.filter(img => img.projectId !== id);
-
   res.json({ success: true });
 });
 
-/* ================================
-   GET IMAGES BY PROJECT
-================================ */
-app.get("/contractor/project/:projectId/images", (req, res) => {
-  const projectId = Number(req.params.projectId);
-  res.json(projectImages.filter(img => img.projectId === projectId));
+app.get("/contractor/project/:id/images", (req, res) => {
+  const id = Number(req.params.id);
+  res.json(projectImages.filter(img => img.projectId === id));
 });
 
 /* ================================
@@ -172,6 +185,6 @@ app.post("/contractor/signup", (_, res) => res.json({ success: true }));
 /* ================================
    START SERVER
 ================================ */
-app.listen(5000, () => {
-  console.log("Server running on http://localhost:5000");
-});
+app.listen(5000, () =>
+  console.log("Server running → http://localhost:5000")
+);
