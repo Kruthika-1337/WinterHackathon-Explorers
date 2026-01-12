@@ -1,17 +1,21 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom"; // ✅ ADD THIS
+import { useNavigate } from "react-router-dom";
 
 function CitizenSignup() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const navigate = useNavigate(); // ✅ ADD THIS
+  const navigate = useNavigate();
 
   const handleSignup = async (e) => {
     e.preventDefault();
 
-    console.log("Citizen Signup:", name, email, password);
+    // ✅ Extra safety check (React-side)
+    if (!name || !email || !password) {
+      alert("All fields are required");
+      return;
+    }
 
     const response = await fetch("http://localhost:5000/citizen/signup", {
       method: "POST",
@@ -19,7 +23,6 @@ function CitizenSignup() {
       body: JSON.stringify({ name, email, password }),
     });
 
-    // ✅ Redirect ONLY if backend is OK
     if (response.ok) {
       navigate("/citizen/dashboard");
     }
@@ -34,6 +37,7 @@ function CitizenSignup() {
           type="text"
           placeholder="Name"
           value={name}
+          required   // ✅ REQUIRED
           onChange={(e) => setName(e.target.value)}
         /><br /><br />
 
@@ -41,6 +45,7 @@ function CitizenSignup() {
           type="email"
           placeholder="Email"
           value={email}
+          required   // ✅ REQUIRED
           onChange={(e) => setEmail(e.target.value)}
         /><br /><br />
 
@@ -48,6 +53,7 @@ function CitizenSignup() {
           type="password"
           placeholder="Password"
           value={password}
+          required   // ✅ REQUIRED
           onChange={(e) => setPassword(e.target.value)}
         /><br /><br />
 

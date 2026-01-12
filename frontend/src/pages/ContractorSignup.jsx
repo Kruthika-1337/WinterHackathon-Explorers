@@ -1,17 +1,21 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom"; // ✅ ADD
+import { useNavigate } from "react-router-dom";
 
 function ContractorSignup() {
   const [companyName, setCompanyName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const navigate = useNavigate(); // ✅ ADD
+  const navigate = useNavigate();
 
   const handleSignup = async (e) => {
     e.preventDefault();
 
-    console.log("Contractor Signup:", companyName, email, password);
+    // ✅ React-side validation
+    if (!companyName || !email || !password) {
+      alert("All fields are required");
+      return;
+    }
 
     const response = await fetch("http://localhost:5000/contractor/signup", {
       method: "POST",
@@ -19,7 +23,6 @@ function ContractorSignup() {
       body: JSON.stringify({ companyName, email, password }),
     });
 
-    // ✅ Redirect ONLY if backend responds OK
     if (response.ok) {
       navigate("/contractor/dashboard");
     }
@@ -34,6 +37,7 @@ function ContractorSignup() {
           type="text"
           placeholder="Company Name"
           value={companyName}
+          required               // ✅ REQUIRED
           onChange={(e) => setCompanyName(e.target.value)}
         /><br /><br />
 
@@ -41,6 +45,7 @@ function ContractorSignup() {
           type="email"
           placeholder="Email"
           value={email}
+          required               // ✅ REQUIRED
           onChange={(e) => setEmail(e.target.value)}
         /><br /><br />
 
@@ -48,6 +53,7 @@ function ContractorSignup() {
           type="password"
           placeholder="Password"
           value={password}
+          required               // ✅ REQUIRED
           onChange={(e) => setPassword(e.target.value)}
         /><br /><br />
 
