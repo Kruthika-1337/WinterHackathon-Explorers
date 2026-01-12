@@ -1,0 +1,16 @@
+how to push:
+
+git add .
+git commit -m"whatevr"
+git push
+
+
+how others can setup:
+
+git clone https://github.com/Kruthika-1337/WinterHackathon-Explorers .
+
+
+
+how to pull:
+
+git pull
