@@ -20,45 +20,47 @@ function ProjectImages() {
       {images.length === 0 ? (
         <p>No images uploaded yet.</p>
       ) : (
-        images.map((img, index) => (
-          <div
-            key={`${img.id}-${index}`}   // ✅ FIXED
-            style={{
-              border: "1px solid #ccc",
-              padding: "15px",
-              marginBottom: "20px",
-              borderRadius: "8px",
-            }}
-          >
-            {/* ✅ STABLE GOOGLE DRIVE IMAGE */}
-            <img
-              src={`https://drive.google.com/uc?export=view&id=${img.fileId || img.driveFileId}`}
-              alt="Work Progress"
+        images.map((img, index) => {
+          const fileId = img.fileId || img.driveFileId;
+
+          if (!fileId) return null;
+
+          return (
+            <div
+              key={index}
               style={{
-                width: "280px",
-                borderRadius: "6px",
-                display: "block",
-                marginBottom: "10px",
+                border: "1px solid #ccc",
+                padding: "15px",
+                marginBottom: "20px",
+                borderRadius: "8px",
+                maxWidth: "320px",
               }}
-              onError={(e) => {
-                e.target.style.display = "none";
-              }}
-            />
+            >
+              <img
+                src={`https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`}
+                alt="Work Progress"
+                style={{
+                  width: "100%",
+                  borderRadius: "6px",
+                  marginBottom: "10px",
+                }}
+              />
 
-            <p>
-              📅 <strong>Time:</strong>{" "}
-              {img.timestamp
-                ? new Date(img.timestamp).toLocaleString()
-                : "N/A"}
-            </p>
+              <p style={{ fontSize: "14px" }}>
+                📅 <strong>Time:</strong>{" "}
+                {img.timestamp
+                  ? new Date(img.timestamp).toLocaleString()
+                  : "N/A"}
+              </p>
 
-            <p>
-              📍 <strong>Location:</strong><br />
-              Lat: {img.latitude || "N/A"}<br />
-              Lng: {img.longitude || "N/A"}
-            </p>
-          </div>
-        ))
+              <p style={{ fontSize: "14px" }}>
+                📍 <strong>Location:</strong><br />
+                Lat: {img.latitude || "N/A"}<br />
+                Lng: {img.longitude || "N/A"}
+              </p>
+            </div>
+          );
+        })
       )}
     </div>
   );
