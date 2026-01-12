@@ -1,5 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import "./UploadProgress.css";
 
 function UploadProgress() {
   const { projectId } = useParams();
@@ -36,7 +37,7 @@ function UploadProgress() {
     }
 
     if (photos.length === 0) {
-      alert("Select images");
+      alert("Select at least one image");
       return;
     }
 
@@ -65,10 +66,9 @@ function UploadProgress() {
         }
       }
 
-      setMessage("✅ Upload successful");
+      setMessage("✅ Progress uploaded successfully");
       setTimeout(() => navigate("/contractor/dashboard"), 1500);
     } catch (err) {
-      console.error(err);
       setMessage("❌ Upload failed");
     } finally {
       setUploading(false);
@@ -76,33 +76,47 @@ function UploadProgress() {
   };
 
   return (
-    <div style={{ padding: "30px" }}>
-      <h2>Upload Progress</h2>
-      <p>Project ID: {projectId}</p>
-
-      <button onClick={getLocation}>📍 Capture Location</button>
-
-      {location && (
-        <p style={{ color: "green" }}>
-          Location locked ✔
+    <div className="upload-page">
+      <div className="upload-card">
+        <h2>📤 Upload Weekly Progress</h2>
+        <p className="subtitle">
+          Upload geo-tagged work proof images (allowed once per week)
         </p>
-      )}
 
-      <form onSubmit={handleUpload}>
-        <input
-          type="file"
-          accept="image/*"
-          multiple
-          onChange={(e) => setPhotos([...e.target.files])}
-        />
-        <br /><br />
+        <div className="location-box">
+          <button onClick={getLocation}>
+            📍 Capture Location
+          </button>
 
-        <button type="submit" disabled={uploading}>
-          {uploading ? "Uploading..." : "Upload Images"}
-        </button>
-      </form>
+          {location && (
+            <span className="location-ok">
+              ✔ Location Locked
+            </span>
+          )}
+        </div>
 
-      <p>{message}</p>
+        <form onSubmit={handleUpload}>
+          <div className="file-box">
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={(e) => setPhotos([...e.target.files])}
+            />
+            <small>{photos.length} file(s) selected</small>
+          </div>
+
+          <button
+            type="submit"
+            className="upload-btn"
+            disabled={uploading}
+          >
+            {uploading ? "Uploading..." : "Upload Images"}
+          </button>
+        </form>
+
+        {message && <p className="message">{message}</p>}
+      </div>
     </div>
   );
 }

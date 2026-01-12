@@ -184,3 +184,78 @@ app.post("/contractor/signup", (_, res) => res.json({ success: true }));
 app.listen(5000, () => {
   console.log("Server running on http://localhost:5000");
 });
+app.post("/upload", upload.single("photo"), async (req, res) => {
+  try {
+    const { projectId, latitude, longitude } = req.body;
+
+    if (!req.file) {
+      return res.status(400).json({ error: "No file received" });
+    }
+
+    /* 🔒 CHECK PROJECT */
+    const project = contractorProjects.find(
+      (p) => p.id === Number(projectId)
+    );
+
+    if (!project || project.status !== "approved") {
+      return res.status(403).json({
+        error: "Project not approved by authority yet",
+      });
+    }
+
+    /* ⏳ WEEKLY UPLOAD LOCK */
+    const imagesForProject = projectImages.filter(
+      (img) => img.projectId === Number(projectId)
+    );
+
+    if (imagesForProject.length > 0) {
+      const lastUpload = new Date(
+        imagesForProject.at(-1).timestamp
+      ).getTime();
+
+      const ONE_WEEK = 7 * 24 * 60 * 60 * 1000;
+
+      if (Date.now() - lastUpload < ONE_WEEK) {
+        return res.status(403).json({
+          error: "Weekly upload limit reached",
+        });
+      }
+    }
+
+    /* ☁️ UPLOAD TO GOOGLE DRIVE */
+    const driveResponse = await drive.files.create({
+      requestBody: { name: req.file.originalname },
+      media: {
+        mimeType: req.file.mimetype,
+        body: fs.createReadStream(req.file.path),
+      },
+    });
+
+    const fileId = driveResponse.data.id;
+
+    await drive.permissions.create({
+      fileId,
+      requestBody: { role: "reader", type: "anyone" },
+    });
+
+    fs.unlinkSync(req.file.path);
+
+const imageUrl = `https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`;
+
+    const imageData = {
+      id: projectImages.length + 1,
+      projectId: Number(projectId),
+      imageUrl,
+      latitude,
+      longitude,
+      timestamp: new Date().toISOString(),
+    };
+
+    projectImages.push(imageData);
+
+    res.json({ success: true, image: imageData });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Upload failed" });
+  }
+});

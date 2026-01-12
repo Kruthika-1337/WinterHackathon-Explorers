@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import "./AddProject.css";
 
 function AddProject() {
   const [description, setDescription] = useState("");
@@ -11,13 +12,6 @@ function AddProject() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    console.log("Project Details:", {
-      description,
-      startDate,
-      endDate,
-    });
-
-    // Send to backend
     try {
       await fetch("http://localhost:5000/contractor/project", {
         method: "POST",
@@ -25,44 +19,59 @@ function AddProject() {
         body: JSON.stringify({ description, startDate, endDate }),
       });
 
-      alert("Project saved successfully!");
-
-      // Redirect to dashboard after save
+      alert("✅ Project submitted for authority approval");
       navigate("/contractor/dashboard");
-
     } catch (error) {
-      console.error("Error adding project:", error);
-      alert("Something went wrong!");
+      alert("❌ Something went wrong");
     }
   };
 
   return (
-    <div style={{ padding: "30px" }}>
-      <h2>Add New Project</h2>
+    <div className="add-project-page">
+      <div className="add-project-card">
+        <h2>Add New Project</h2>
+        <p className="subtitle">
+          Fill in project details. Uploads allowed only after authority approval.
+        </p>
 
-      <form onSubmit={handleSubmit}>
-        <textarea
-          placeholder="Project Description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        /><br /><br />
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label>Project Description</label>
+            <textarea
+              placeholder="Eg: Road widening near City Circle"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              required
+            />
+          </div>
 
-        <label>Start Date</label><br />
-        <input
-          type="date"
-          value={startDate}
-          onChange={(e) => setStartDate(e.target.value)}
-        /><br /><br />
+          <div className="form-row">
+            <div className="form-group">
+              <label>Start Date</label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                required
+              />
+            </div>
 
-        <label>End Date</label><br />
-        <input
-          type="date"
-          value={endDate}
-          onChange={(e) => setEndDate(e.target.value)}
-        /><br /><br />
+            <div className="form-group">
+              <label>End Date</label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                required
+              />
+            </div>
+          </div>
 
-        <button type="submit">Save Project</button>
-      </form>
+          <button type="submit" className="submit-btn">
+            🚀 Submit Project
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

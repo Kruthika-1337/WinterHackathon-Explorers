@@ -1,151 +1,111 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import "./ContractorDashboard.css";
 
 function ContractorDashboard() {
   const navigate = useNavigate();
   const [projects, setProjects] = useState([]);
   const [stats, setStats] = useState({});
 
-  const handleAddProject = () => {
-    navigate("/contractor/add-project");
-  };
-
-  // 🔹 Load projects + image stats
   useEffect(() => {
     const loadData = async () => {
-      try {
-        const res = await fetch("http://localhost:5000/contractor/projects");
-        const data = await res.json();
-        setProjects(data);
+      const res = await fetch("http://localhost:5000/contractor/projects");
+      const data = await res.json();
+      setProjects(data);
 
-        const statsObj = {};
+      const statsObj = {};
 
-        for (let p of data) {
-          const imgRes = await fetch(
-            `http://localhost:5000/contractor/project/${p.id}/images`
-          );
-          const images = await imgRes.json();
+      for (let p of data) {
+        const imgRes = await fetch(
+          `http://localhost:5000/contractor/project/${p.id}/images`
+        );
+        const images = await imgRes.json();
 
-          statsObj[p.id] = {
-            total: images.length,
-            lastUpdated:
-              images.length > 0
-                ? new Date(
-                    images[images.length - 1].timestamp
-                  ).toLocaleString()
-                : "No uploads yet",
-          };
-        }
-
-        setStats(statsObj);
-      } catch (err) {
-        console.error("Dashboard load error:", err);
+        statsObj[p.id] = {
+          total: images.length,
+          latestImage:
+            images.length > 0 ? images[images.length - 1].imageUrl : null,
+          progress: Math.min(images.length * 20, 100), // 5 uploads = 100%
+        };
       }
+
+      setStats(statsObj);
     };
 
     loadData();
   }, []);
 
-  // 🔥 Proper delete handler
-  const handleDeleteProject = async (projectId) => {
-    if (!window.confirm("Delete this project permanently?")) return;
-
-    try {
-      await fetch(
-        `http://localhost:5000/contractor/project/${projectId}`,
-        { method: "DELETE" }
-      );
-
-      // ✅ Remove from UI instantly
-      setProjects(projects.filter((p) => p.id !== projectId));
-
-      // ✅ Remove stats
-      const newStats = { ...stats };
-      delete newStats[projectId];
-      setStats(newStats);
-    } catch (err) {
-      console.error("Delete failed:", err);
-    }
-  };
-
   return (
-    <div style={{ padding: "30px" }}>
-      <h2>Contractor Dashboard</h2>
-      <p>Welcome Contractor 👷‍♂️</p>
+    <div className="contractor-dashboard">
+      <div className="dashboard-header">
+        <div>
+          <h2>👷 Contractor Dashboard</h2>
+          <p>Government Project Monitoring</p>
+        </div>
 
-      <button onClick={handleAddProject}>Add New Project</button>
+        <button
+          className="add-project-btn"
+          onClick={() => navigate("/contractor/add-project")}
+        >
+          + Add Project
+        </button>
+      </div>
 
-      <br /><br />
+      <div className="project-grid">
+        {projects.map((p) => (
+          <div className="project-card" key={p.id}>
+            <div className="project-top">
+              <h4>{p.description}</h4>
+              <span className="status live">LIVE</span>
+            </div>
 
-      <h3>Your Projects</h3>
+            <div className="project-body">
+              {stats[p.id]?.latestImage ? (
+                <img
+                  src={stats[p.id].latestImage}
+                  alt="progress"
+                  className="project-thumb"
+                />
+              ) : (
+                <div className="no-image">No uploads</div>
+              )}
 
-      {projects.length === 0 ? (
-        <p>No projects added yet.</p>
-      ) : (
-        <ul style={{ listStyle: "none", padding: 0 }}>
-          {projects.map((p) => (
-            <li
-              key={p.id}
-              style={{
-                marginBottom: "20px",
-                padding: "15px",
-                border: "1px solid #ccc",
-                borderRadius: "8px",
-              }}
-            >
-              <strong>{p.description}</strong>
-              <br />
-              🗓 {p.startDate} → {p.endDate}
+              <div className="project-info">
+                <p>
+                  📸 Uploads: <strong>{stats[p.id]?.total || 0}</strong>
+                </p>
 
-              <p style={{ marginTop: "10px" }}>
-                📸 Total Uploads: {stats[p.id]?.total || 0}
-                <br />
-                ⏱ Last Updated: {stats[p.id]?.lastUpdated || "—"}
-              </p>
+                <div className="progress-bar">
+                  <div
+                    className="progress-fill"
+                    style={{
+                      width: `${stats[p.id]?.progress || 0}%`,
+                    }}
+                  />
+                </div>
+                <small>{stats[p.id]?.progress || 0}% completed</small>
+              </div>
+            </div>
 
+            <div className="project-actions">
               <button
                 onClick={() =>
                   navigate(`/contractor/project/${p.id}/upload`)
                 }
               >
-                Upload Progress
+                Upload
               </button>
-
               <button
                 onClick={() =>
                   navigate(`/contractor/project/${p.id}/images`)
                 }
-                style={{ marginLeft: "10px" }}
               >
-                View Images
+                View
               </button>
-
-              <button
-                onClick={() =>
-                  navigate(`/contractor/project/${p.id}/progress`)
-                }
-                style={{ marginLeft: "10px" }}
-              >
-                Weekly Progress Graph
-              </button>
-
-              <button
-                onClick={() => handleDeleteProject(p.id)}
-                style={{ marginLeft: "10px", color: "red" }}
-              >
-                Delete Project
-              </button>
-              <button
-                onClick={() =>
-                navigate(`/contractor/project/${p.id}/edit`)}
-                style={{ marginLeft: "10px" }}
-              >
-                Edit Project
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
