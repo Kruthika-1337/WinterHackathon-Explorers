@@ -1,81 +1,143 @@
-/* Full page background */
-.landing-container {
-  height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(to right, #1e3c72, #2a5298);
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
   font-family: "Segoe UI", sans-serif;
 }
 
-/* Main card */
-.landing-card {
-  background: white;
-  padding: 40px;
-  border-radius: 12px;
-  width: 420px;
-  text-align: center;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+.landing {
+  background: #f7f9fc;
+  min-height: 100vh;
 }
 
-.landing-card h1 {
-  margin-bottom: 10px;
-  color: #1e3c72;
-}
-
-.subtitle {
-  color: #555;
-  font-size: 14px;
-  margin-bottom: 30px;
-}
-
-/* Role cards */
-.role-container {
+/* Navbar */
+.navbar {
   display: flex;
-  gap: 20px;
+  justify-content: space-between;
+  padding: 20px 60px;
+  background: white;
 }
 
-.role-card {
-  flex: 1;
-  padding: 20px;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  border: 2px solid transparent;
+.navbar span {
+  color: #2563eb;
 }
 
-.role-card h2 {
+.navbar ul {
+  display: flex;
+  gap: 25px;
+  list-style: none;
+  color: #666;
+  font-size: 14px;
+}
+
+/* Hero */
+.hero {
+  display: flex;
+  justify-content: space-between;
+  padding: 60px;
+}
+
+/* Left */
+.hero-left {
+  width: 55%;
+}
+
+.hero-left h1 {
+  font-size: 42px;
+  line-height: 1.2;
+  margin-bottom: 20px;
+}
+
+.hero-left span {
+  color: #2563eb;
+}
+
+.hero-left p {
+  color: #555;
+  max-width: 520px;
+  margin-bottom: 20px;
+}
+
+.badges span {
+  margin-right: 15px;
+  font-size: 14px;
+}
+
+/* Cards */
+.cards {
+  display: flex;
+  gap: 25px;
+  margin-top: 30px;
+}
+
+.card {
+  background: white;
+  padding: 25px;
+  border-radius: 12px;
+  width: 280px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+}
+
+.card h3 {
   margin-bottom: 10px;
 }
 
-.role-card p {
+.card p {
   font-size: 13px;
-  color: #555;
+  color: #666;
+  margin-bottom: 15px;
 }
 
-/* Citizen style */
-.role-card.citizen {
-  background: #f0f7ff;
-  border-color: #1e88e5;
+.card button {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  margin-top: 10px;
+  font-weight: 600;
 }
 
-.role-card.citizen:hover {
-  background: #1e88e5;
+/* Buttons */
+.blue {
+  background: #2563eb;
   color: white;
 }
 
-/* Contractor style */
-.role-card.contractor {
-  background: #fef5e7;
-  border-color: #fb8c00;
-}
-
-.role-card.contractor:hover {
-  background: #fb8c00;
+.orange {
+  background: #f97316;
   color: white;
 }
 
-/* Hover text color */
-.role-card:hover p {
+.outline {
+  background: white;
+  border: 2px solid #2563eb;
+  color: #2563eb;
+}
+
+.orange-outline {
+  border-color: #f97316;
+  color: #f97316;
+}
+
+/* Right */
+.hero-right {
+  position: relative;
+}
+
+.hero-right img {
+  width: 300px;
+  height:450px;
+  border-radius: 20px;
+}
+
+.verified-badge {
+  position: absolute;
+  bottom: 20px;
+  left: 100px;
+  background: #22c55e;
   color: white;
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: 12px;
 }
