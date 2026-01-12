@@ -1,3 +1,4 @@
+// ProjectImages.jsx
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 
@@ -6,61 +7,49 @@ function ProjectImages() {
   const [images, setImages] = useState([]);
 
   useEffect(() => {
-    fetch(`http://localhost:5000/contractor/project/${projectId}/images`)
-      .then((res) => res.json())
-      .then((data) => setImages(data))
-      .catch((err) => console.error(err));
+    const loadImages = async () => {
+      try {
+        const res = await fetch(
+          `http://localhost:5000/contractor/project/${projectId}/images`
+        );
+        const data = await res.json();
+        setImages(data.reverse());
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    loadImages();
   }, [projectId]);
 
   return (
-    <div style={{ padding: "30px" }}>
-      <h2>Project Images</h2>
+    <div style={{ padding: 30 }}>
+      <h2>Uploaded Images</h2>
       <p>Project ID: {projectId}</p>
 
       {images.length === 0 ? (
         <p>No images uploaded yet.</p>
       ) : (
-        images.map((img, index) => {
-          const fileId = img.fileId || img.driveFileId;
+        images.map((img) => (
+          <div
+            key={img.id}
+            style={{
+              marginBottom: 25,
+              border: "1px solid #ccc",
+              padding: 10,
+              borderRadius: 8,
+            }}
+          >
+            <img
+              src={img.imageUrl}
+              alt=""
+              style={{ width: 260, borderRadius: 6 }}
+            />
 
-          if (!fileId) return null;
-
-          return (
-            <div
-              key={index}
-              style={{
-                border: "1px solid #ccc",
-                padding: "15px",
-                marginBottom: "20px",
-                borderRadius: "8px",
-                maxWidth: "320px",
-              }}
-            >
-              <img
-                src={`https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`}
-                alt="Work Progress"
-                style={{
-                  width: "100%",
-                  borderRadius: "6px",
-                  marginBottom: "10px",
-                }}
-              />
-
-              <p style={{ fontSize: "14px" }}>
-                📅 <strong>Time:</strong>{" "}
-                {img.timestamp
-                  ? new Date(img.timestamp).toLocaleString()
-                  : "N/A"}
-              </p>
-
-              <p>
-                📍 <strong>Address:</strong><br />
-                {img.address || "Address unavailable"}
-              </p>
-
-            </div>
-          );
-        })
+            <p><strong>📍 Address:</strong> {img.address}</p>
+            <p><strong>⏱ Time:</strong> {new Date(img.timestamp).toLocaleString()}</p>
+          </div>
+        ))
       )}
     </div>
   );

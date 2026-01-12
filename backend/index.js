@@ -10,168 +10,194 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Multer
 const upload = multer({ dest: "uploads/" });
 
-/* ================= GOOGLE DRIVE ================= */
+// Google OAuth
 const oauthClientData = JSON.parse(fs.readFileSync("oauth-client.json"));
 const oauth2Client = new google.auth.OAuth2(
   oauthClientData.web.client_id,
   oauthClientData.web.client_secret,
   oauthClientData.web.redirect_uris[0]
 );
-oauth2Client.setCredentials(JSON.parse(fs.readFileSync("token.json")));
+
+const token = JSON.parse(fs.readFileSync("token.json"));
+oauth2Client.setCredentials(token);
 
 const drive = google.drive({ version: "v3", auth: oauth2Client });
 
-/* ================= IN MEMORY DB ================= */
+// In-memory DB
 let contractorProjects = [];
 let projectImages = [];
-let feedbacks = [];
+let projectFeedbacks = [];
 
-/* ================= ADDRESS ================= */
+/* HEALTH */
+app.get("/", (_, res) => res.send("Backend running ✔"));
+
+/* Get readable address */
 async function getAddressFromIP(ip) {
   try {
     const geo = await axios.get(`https://ipapi.co/${ip}/json/`);
-    if (!geo.data.latitude) return "Address unavailable";
+    const { latitude, longitude } = geo.data;
+    if (!latitude || !longitude) return "Address unavailable";
 
-    const res = await axios.get(
+    const addr = await axios.get(
       "https://maps.googleapis.com/maps/api/geocode/json",
-      {
-        params: {
-          latlng: `${geo.data.latitude},${geo.data.longitude}`,
-          key: process.env.GOOGLE_MAPS_API_KEY,
-        },
-      }
+      { params: { latlng: `${latitude},${longitude}`, key: process.env.GOOGLE_MAPS_API_KEY } }
     );
 
-    return res.data.results?.[0]?.formatted_address || "Address unavailable";
+    return addr.data.results?.[0]?.formatted_address || "Address unavailable";
   } catch {
     return "Address unavailable";
   }
 }
 
-/* ================= UPLOAD IMAGES ================= */
-app.post("/upload", upload.array("photos"), async (req, res) => {
-  const userIP = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
-  const address = await getAddressFromIP(userIP);
+/* Upload image */
+app.post("/upload", upload.single("photo"), async (req, res) => {
+  try {
+    const projectId = Number(req.body.projectId);
+    const contractorName = req.body.contractorName || "Unknown Contractor";
+    const timestamp = new Date().toISOString();
 
-  const uploaded = [];
+    const userIP = req.headers["x-forwarded-for"] || req.socket.remoteAddress || "8.8.8.8";
+    const address = await getAddressFromIP(userIP);
 
-  for (let file of req.files) {
-    const driveRes = await drive.files.create({
-      requestBody: { name: file.originalname },
+    const driveResponse = await drive.files.create({
+      requestBody: { name: req.file.originalname },
       media: {
-        mimeType: file.mimetype,
-        body: fs.createReadStream(file.path),
+        mimeType: req.file.mimetype,
+        body: fs.createReadStream(req.file.path),
       },
     });
 
-    await drive.permissions.create({
-      fileId: driveRes.data.id,
-      requestBody: { role: "reader", type: "anyone" },
-    });
-
-    fs.unlinkSync(file.path);
+    const fileId = driveResponse.data.id;
+    await drive.permissions.create({ fileId, requestBody: { role: "reader", type: "anyone" } });
+    fs.unlinkSync(req.file.path);
 
     const img = {
       id: projectImages.length + 1,
-      projectId: Number(req.body.projectId),
-      imageUrl: `https://drive.google.com/thumbnail?id=${driveRes.data.id}&sz=w800`,
+      projectId,
+      contractorName,
+      driveFileId: fileId,
+      imageUrl: `https://drive.google.com/thumbnail?id=${fileId}&sz=w800`,
       address,
-      timestamp: new Date().toISOString(),
+      timestamp
     };
 
     projectImages.push(img);
-    uploaded.push(img);
+    res.json({ success: true, image: img });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Upload failed" });
   }
-
-  res.json({ success: true, images: uploaded });
 });
 
-/* ================= PROJECT CRUD ================= */
+/* Contractor Projects */
 app.post("/contractor/project", (req, res) => {
-  const p = { id: contractorProjects.length + 1, ...req.body };
-  contractorProjects.push(p);
-  res.json(p);
+  const { description, startDate, endDate } = req.body;
+  const project = {
+    id: contractorProjects.length + 1,
+    description,
+    startDate,
+    endDate,
+  };
+  contractorProjects.push(project);
+  res.json({ success: true, project });
 });
 
 app.get("/contractor/projects", (_, res) => res.json(contractorProjects));
 
 app.put("/contractor/project/:id", (req, res) => {
-  const p = contractorProjects.find(x => x.id == req.params.id);
-  Object.assign(p, req.body);
-  res.json(p);
+  const id = Number(req.params.id);
+  const p = contractorProjects.find(x => x.id === id);
+  if (!p) return res.status(404).json({ error: "Not found" });
+
+  p.description = req.body.description;
+  p.startDate = req.body.startDate;
+  p.endDate = req.body.endDate;
+  res.json({ success: true, project: p });
 });
 
 app.delete("/contractor/project/:id", (req, res) => {
-  contractorProjects = contractorProjects.filter(p => p.id != req.params.id);
-  projectImages = projectImages.filter(i => i.projectId != req.params.id);
+  const id = Number(req.params.id);
+  contractorProjects = contractorProjects.filter(p => p.id !== id);
+  projectImages = projectImages.filter(i => i.projectId !== id);
+  projectFeedbacks = projectFeedbacks.filter(f => f.projectId !== id);
   res.json({ success: true });
 });
 
-app.get("/contractor/project/:id/images", (req, res) =>
-  res.json(projectImages.filter(i => i.projectId == req.params.id))
-);
+/* Project images */
+app.get("/contractor/project/:id/images", (req, res) => {
+  res.json(projectImages.filter(i => i.projectId === Number(req.params.id)));
+});
 
-/* ================= CITIZEN SEARCH ================= */
+/* Citizen search */
 app.get("/citizen/search", (req, res) => {
-  const words = req.query.q?.toLowerCase().split(" ").filter(w => w.length > 2);
-  if (!words || words.length < 2) return res.json([]);
+  const q = req.query.q?.toLowerCase() || "";
+  if (q.split(" ").length < 2) return res.json([]);
 
+  const seen = new Set();
   const results = [];
 
-  projectImages.forEach(img => {
-    if (words.every(w => img.address.toLowerCase().includes(w))) {
-      const proj = contractorProjects.find(p => p.id === img.projectId);
-      if (proj && !results.find(r => r.projectId === proj.id)) {
+  for (const img of projectImages) {
+    if (q.split(" ").every(w => img.address.toLowerCase().includes(w))) {
+      if (!seen.has(img.projectId)) {
+        const p = contractorProjects.find(x => x.id === img.projectId);
         results.push({
-          projectId: proj.id,
-          description: proj.description,
+          projectId: img.projectId,
+          description: p?.description || "",
           address: img.address,
           thumbnail: img.imageUrl,
         });
+        seen.add(img.projectId);
       }
     }
-  });
+  }
 
   res.json(results);
 });
 
-/* ================= FEEDBACK ================= */
-app.post("/citizen/feedback", upload.single("photo"), async (req, res) => {
-  let imageUrl = null;
+/* Citizen Feedback */
+app.post("/citizen/project/:id/feedback", upload.single("photo"), async (req, res) => {
+  try {
+    const projectId = Number(req.params.id);
+    let imageUrl = null;
 
-  if (req.file) {
-    const d = await drive.files.create({
-      requestBody: { name: req.file.originalname },
-      media: { mimeType: req.file.mimetype, body: fs.createReadStream(req.file.path) },
-    });
+    if (req.file) {
+      const driveResponse = await drive.files.create({
+        requestBody: { name: req.file.originalname },
+        media: { mimeType: req.file.mimetype, body: fs.createReadStream(req.file.path) },
+      });
+      const fileId = driveResponse.data.id;
+      await drive.permissions.create({ fileId, requestBody: { role: "reader", type: "anyone" } });
+      fs.unlinkSync(req.file.path);
+      imageUrl = `https://drive.google.com/thumbnail?id=${fileId}&sz=w800`;
+    }
 
-    await drive.permissions.create({
-      fileId: d.data.id,
-      requestBody: { role: "reader", type: "anyone" },
-    });
+    const f = {
+      id: projectFeedbacks.length + 1,
+      projectId,
+      username: req.body.username,
+      message: req.body.message,
+      type: req.body.type,
+      imageUrl,
+      timestamp: new Date().toISOString(),
+    };
 
-    fs.unlinkSync(req.file.path);
-    imageUrl = `https://drive.google.com/thumbnail?id=${d.data.id}&sz=w600`;
+    projectFeedbacks.push(f);
+    res.json({ success: true, feedback: f });
+  } catch (err) {
+    res.status(500).json({ error: "Feedback failed" });
   }
-
-  const fb = {
-    id: feedbacks.length + 1,
-    ...req.body,
-    imageUrl,
-    time: new Date().toISOString(),
-  };
-
-  feedbacks.push(fb);
-  res.json({ success: true });
 });
 
+/* Contractor sees feedback */
 app.get("/contractor/project/:id/feedback", (req, res) =>
-  res.json(feedbacks.filter(f => f.projectId == req.params.id))
+  res.json(projectFeedbacks.filter(f => f.projectId === Number(req.params.id)))
 );
 
-/* ================= START ================= */
-app.listen(5000, () =>
-  console.log("🚀 Backend running on http://localhost:5000")
-);
+/* Dummy Auth */
+app.post("/citizen/login", (_, res) => res.json({ success: true }));
+app.post("/contractor/login", (_, res) => res.json({ success: true }));
+
+app.listen(5000, () => console.log("Running http://localhost:5000"));

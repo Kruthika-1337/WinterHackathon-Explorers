@@ -9,107 +9,126 @@ function CitizenDashboard() {
   const navigate = useNavigate();
 
   const handleSearch = async () => {
-    if (query.trim().split(" ").length < 2) {
-      alert("Please enter at least 2 words of the address");
+    if (query.trim().length < 3) {
+      alert("Enter at least 3 characters");
       return;
     }
 
     setLoading(true);
+    setResults([]);
 
     try {
       const res = await fetch(
-        `http://localhost:5000/citizen/search?q=${encodeURIComponent(query)}`
+        `http://localhost:5000/citizen/search?q=${query}`
       );
+
       const data = await res.json();
       setResults(data);
     } catch (err) {
-      console.error("Search failed", err);
-      alert("Search failed");
+      console.error("Search error:", err);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
-    <div style={{ padding: "30px" }}>
-      <h2>Citizen Dashboard</h2>
-      <p>Search works happening in your area</p>
+    <div style={styles.container}>
+      <h2 style={styles.heading}>Citizen Dashboard 🏠</h2>
 
-      {/* 🔍 SEARCH BAR */}
-      <input
-        type="text"
-        placeholder="Enter area / address (min 2 words)"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        style={{ width: "300px", padding: "8px" }}
-      />
-      <button onClick={handleSearch} style={{ marginLeft: "10px" }}>
-        Search
-      </button>
+      <p>Search for works around your area:</p>
 
-      <br /><br />
+      <div style={styles.searchContainer}>
+        <input
+          style={styles.input}
+          type="text"
+          placeholder="Enter your street / locality / landmark"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+        <button style={styles.button} onClick={handleSearch}>
+          Search
+        </button>
+      </div>
 
-      {/* 🔄 LOADING */}
       {loading && <p>Searching...</p>}
 
-      {/* 📦 RESULTS */}
-      {results.length === 0 && !loading && (
-        <p>No projects found</p>
-      )}
+      <div style={styles.results}>
+        {results.length === 0 && !loading && (
+          <p style={{ marginTop: "20px" }}>No matching works found yet.</p>
+        )}
 
-      {results.map((item) => (
-        <div
-          key={item.projectId}
-          style={{
-            border: "1px solid #ccc",
-            borderRadius: "8px",
-            padding: "15px",
-            marginBottom: "20px",
-            display: "flex",
-            gap: "15px",
-          }}
-        >
-          {/* 🖼 IMAGE */}
-          {item.thumbnail && (
+        {results.map((p) => (
+          <div key={p.projectId} style={styles.card}>
             <img
-              src={item.thumbnail}
-              alt="Project"
-              style={{
-                width: "150px",
-                height: "100px",
-                objectFit: "cover",
-                borderRadius: "6px",
-              }}
+              src={p.thumbnail}
+              alt="thumb"
+              style={styles.thumb}
             />
-          )}
+            <div style={styles.info}>
+              <h4>{p.description}</h4>
+              <p>📍 {p.address}</p>
+              <p>👷 Contractor: {p.contractorName}</p>
 
-          {/* 📄 DETAILS */}
-          <div style={{ flex: 1 }}>
-            <h4>{item.description}</h4>
-            <p>📍 {item.address}</p>
-            <p>👷 Contractor: {item.contractorName}</p>
-
-            <button
-              onClick={() =>
-                navigate(`/citizen/project/${item.projectId}`)
-              }
-            >
-              View Project
-            </button>
-
-            <button
-              onClick={() =>
-                navigate(`/citizen/project/${item.projectId}/feedback`)
-              }
-              style={{ marginLeft: "10px" }}
-            >
-              Feedback / Complaint
-            </button>
+              <button
+                style={styles.viewBtn}
+                onClick={() =>
+                  navigate(`/citizen/project/${p.projectId}`)
+                }
+              >
+                View Details / Give Feedback
+              </button>
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }
+
+const styles = {
+  container: { padding: "30px", fontFamily: "Arial" },
+  heading: { marginBottom: "15px" },
+  searchContainer: { display: "flex", gap: "10px" },
+  input: {
+    flex: 1,
+    padding: "8px",
+    borderRadius: "6px",
+    border: "1px solid #aaa",
+  },
+  button: {
+    padding: "8px 16px",
+    borderRadius: "6px",
+    backgroundColor: "#0077ff",
+    color: "white",
+    border: "none",
+    cursor: "pointer",
+  },
+  results: { marginTop: "25px" },
+  card: {
+    display: "flex",
+    gap: "15px",
+    border: "1px solid #ddd",
+    borderRadius: "8px",
+    padding: "10px",
+    marginBottom: "15px",
+    background: "#fafafa",
+  },
+  thumb: {
+    width: "110px",
+    height: "80px",
+    objectFit: "cover",
+    borderRadius: "6px",
+  },
+  info: { flex: 1 },
+  viewBtn: {
+    marginTop: "5px",
+    backgroundColor: "green",
+    color: "white",
+    padding: "6px 12px",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
+  },
+};
 
 export default CitizenDashboard;

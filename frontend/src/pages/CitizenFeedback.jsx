@@ -1,120 +1,57 @@
 import { useState } from "react";
 
-function CitizenFeedback({ projectId, onClose }) {
-  const [username, setUsername] = useState("");
+function CitizenFeedback({ projectId }) {
   const [message, setMessage] = useState("");
+  const [username, setUsername] = useState("Citizen");
   const [type, setType] = useState("feedback");
   const [photo, setPhoto] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState("");
+  const [status, setStatus] = useState("");
 
-  const handleSubmit = async (e) => {
+  const submitFeedback = async (e) => {
     e.preventDefault();
 
-    if (!username || !message) {
-      alert("Please enter username and message");
-      return;
-    }
+    const formData = new FormData();
+    formData.append("username", username);
+    formData.append("message", message);
+    formData.append("type", type);
+    if (photo) formData.append("photo", photo);
 
-    setLoading(true);
+    const res = await fetch(
+      `http://localhost:5000/citizen/project/${projectId}/feedback`,
+      { method: "POST", body: formData }
+    );
 
-    try {
-      const formData = new FormData();
-      formData.append("username", username);
-      formData.append("message", message);
-      formData.append("type", type);
-
-      if (photo) {
-        formData.append("photo", photo);
-      }
-
-      const res = await fetch(
-        `http://localhost:5000/citizen/project/${projectId}/feedback`,
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
-
-      const data = await res.json();
-
-      if (data.success) {
-        setSuccess("✅ Feedback submitted successfully");
-        setMessage("");
-        setPhoto(null);
-      } else {
-        alert("Submission failed");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Error submitting feedback");
-    } finally {
-      setLoading(false);
-    }
+    const out = await res.json();
+    if (out.success) setStatus("✔ Submitted!");
+    else setStatus("❌ Failed, try again");
   };
 
   return (
-    <div
-      style={{
-        border: "1px solid #ccc",
-        padding: "20px",
-        borderRadius: "8px",
-        marginTop: "20px",
-        background: "#f9f9f9",
-      }}
-    >
-      <h3>Feedback / Complaint</h3>
+    <div style={{ marginTop: "20px", borderTop: "1px solid #aaa", paddingTop: "20px" }}>
+      <h3>Send Feedback / Complaint 📢</h3>
 
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          placeholder="Your Name"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          style={{ width: "100%", marginBottom: "10px" }}
-        />
-
-        <select
-          value={type}
-          onChange={(e) => setType(e.target.value)}
-          style={{ width: "100%", marginBottom: "10px" }}
-        >
+      <form onSubmit={submitFeedback}>
+        <select value={type} onChange={(e) => setType(e.target.value)}>
           <option value="feedback">Feedback</option>
           <option value="complaint">Complaint</option>
         </select>
 
+        <br /><br />
         <textarea
-          placeholder="Write your message..."
+          placeholder="Message"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          rows={4}
-          style={{ width: "100%", marginBottom: "10px" }}
-        />
-
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(e) => setPhoto(e.target.files[0])}
+          required
         />
 
         <br /><br />
+        <input type="file" accept="image/*" onChange={(e) => setPhoto(e.target.files[0])} />
 
-        <button type="submit" disabled={loading}>
-          {loading ? "Submitting..." : "Submit"}
-        </button>
-
-        {onClose && (
-          <button
-            type="button"
-            onClick={onClose}
-            style={{ marginLeft: "10px" }}
-          >
-            Close
-          </button>
-        )}
+        <br /><br />
+        <button type="submit">Submit</button>
       </form>
 
-      {success && <p style={{ color: "green" }}>{success}</p>}
+      <p>{status}</p>
     </div>
   );
 }

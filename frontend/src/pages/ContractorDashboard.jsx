@@ -1,76 +1,49 @@
-import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 function ContractorDashboard() {
   const navigate = useNavigate();
   const [projects, setProjects] = useState([]);
-  const [stats, setStats] = useState({});
 
   useEffect(() => {
-    const load = async () => {
-      const res = await fetch("http://localhost:5000/contractor/projects");
-      const data = await res.json();
-      setProjects(data);
-
-      const s = {};
-      for (let p of data) {
-        const r = await fetch(
-          `http://localhost:5000/contractor/project/${p.id}/images`
-        );
-        const imgs = await r.json();
-        s[p.id] = {
-          total: imgs.length,
-          lastUpdated:
-            imgs.length > 0
-              ? new Date(imgs[imgs.length - 1].timestamp).toLocaleString()
-              : "No uploads yet",
-        };
-      }
-      setStats(s);
-    };
-    load();
+    fetch("http://localhost:5000/contractor/projects")
+      .then((res) => res.json())
+      .then(setProjects)
+      .catch(console.error);
   }, []);
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Delete project?")) return;
-    await fetch(`http://localhost:5000/contractor/project/${id}`, {
-      method: "DELETE",
-    });
-    setProjects(projects.filter(p => p.id !== id));
+  const deleteProject = async (id) => {
+    if (!window.confirm("Delete this permanently?")) return;
+    await fetch(`http://localhost:5000/contractor/project/${id}`, { method: "DELETE" });
+    setProjects(projects.filter((p) => p.id !== id));
   };
 
   return (
     <div style={{ padding: "30px" }}>
-      <h2>Contractor Dashboard</h2>
+      <h2>Contractor Dashboard 👷</h2>
 
       <button onClick={() => navigate("/contractor/add-project")}>
-        Add New Project
+        ➕ Add Project
       </button>
 
-      <br /><br />
+      <h3 style={{ marginTop: "20px" }}>Your Projects</h3>
 
-      {projects.map(p => (
-        <div key={p.id} style={{ border: "1px solid #ccc", padding: "15px", marginBottom: "15px" }}>
-          <strong>{p.description}</strong><br />
+      {projects.length === 0 ? <p>No projects yet.</p> : null}
+
+      {projects.map((p) => (
+        <div key={p.id} style={{ border: "1px solid #ccc", padding: 15, marginBottom: 15 }}>
+          <strong>{p.description}</strong><br/>
           🗓 {p.startDate} → {p.endDate}
-
-          <p>
-            📸 Uploads: {stats[p.id]?.total || 0}<br />
-            ⏱ Last update: {stats[p.id]?.lastUpdated || "—"}
-          </p>
-
-          <button onClick={() => navigate(`/contractor/project/${p.id}/upload`)}>
-            Upload Progress
-          </button>
-          <button onClick={() => navigate(`/contractor/project/${p.id}/images`)}>
-            View Images
-          </button>
-          <button onClick={() => navigate(`/contractor/project/${p.id}/edit`)}>
-            Edit
-          </button>
-          <button onClick={() => handleDelete(p.id)} style={{ color: "red" }}>
-            Delete
-          </button>
+          <br /><br />
+          <button onClick={() => navigate(`/contractor/project/${p.id}/upload`)}>📸 Upload</button>
+          <button onClick={() => navigate(`/contractor/project/${p.id}/images`)}
+            style={{ marginLeft: 10 }}>🖼 View Images</button>
+          <button onClick={() => navigate(`/contractor/project/${p.id}/edit`)}
+            style={{ marginLeft: 10 }}>✏ Edit</button>
+          <button onClick={() => navigate(`/contractor/project/${p.id}/feedback`)}
+            style={{ marginLeft: 10 }}>📢 Feedback</button>
+          <button onClick={() => deleteProject(p.id)}
+            style={{ marginLeft: 10, color: "red" }}>🗑 Delete</button>
         </div>
       ))}
     </div>
