@@ -10,7 +10,6 @@ import CitizenDashboard from "./pages/CitizenDashboard";
 import AddProject from "./pages/AddProject";
 import UploadProgress from "./pages/UploadProgress";
 import ProjectImages from "./pages/ProjectImages";
-import ProjectProgress from "./pages/ProjectProgress";
 import EditProject from "./pages/EditProject";
 function App() {
   return (
@@ -26,7 +25,6 @@ function App() {
         <Route path="/contractor/add-project" element={<AddProject />} />
         <Route path="/contractor/project/:projectId/upload"element={<UploadProgress />}/>
         <Route path="/contractor/project/:projectId/images"element={<ProjectImages />}/>
-        <Route path="/contractor/project/:projectId/progress"element={<ProjectProgress />}/>
         <Route path="/contractor/project/:projectId/edit"element={<EditProject />}/>
         
       </Routes>
