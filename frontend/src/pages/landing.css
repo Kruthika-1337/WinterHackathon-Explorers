@@ -1,0 +1,81 @@
+/* Full page background */
+.landing-container {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(to right, #1e3c72, #2a5298);
+  font-family: "Segoe UI", sans-serif;
+}
+
+/* Main card */
+.landing-card {
+  background: white;
+  padding: 40px;
+  border-radius: 12px;
+  width: 420px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.landing-card h1 {
+  margin-bottom: 10px;
+  color: #1e3c72;
+}
+
+.subtitle {
+  color: #555;
+  font-size: 14px;
+  margin-bottom: 30px;
+}
+
+/* Role cards */
+.role-container {
+  display: flex;
+  gap: 20px;
+}
+
+.role-card {
+  flex: 1;
+  padding: 20px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.role-card h2 {
+  margin-bottom: 10px;
+}
+
+.role-card p {
+  font-size: 13px;
+  color: #555;
+}
+
+/* Citizen style */
+.role-card.citizen {
+  background: #f0f7ff;
+  border-color: #1e88e5;
+}
+
+.role-card.citizen:hover {
+  background: #1e88e5;
+  color: white;
+}
+
+/* Contractor style */
+.role-card.contractor {
+  background: #fef5e7;
+  border-color: #fb8c00;
+}
+
+.role-card.contractor:hover {
+  background: #fb8c00;
+  color: white;
+}
+
+/* Hover text color */
+.role-card:hover p {
+  color: white;
+}
