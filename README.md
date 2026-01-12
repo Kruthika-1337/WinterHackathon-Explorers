@@ -1,3 +1,5 @@
+# EXPLORERS
+
 #  Winter Hackathon - Repository Setup Guide
 
 Welcome to the Winter Hackathon organized by **Sceptix** and **GDG SJEC**! To track your progress and collaborate effectively, every team must fork the official repository and follow the steps below.
