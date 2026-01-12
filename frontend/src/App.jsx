@@ -1,25 +1,27 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-/* Home */
-import Home from ".pages/Home";
+import Landing from "./pages/Landing";
+import CitizenLogin from "./pages/CitizenLogin";
+import CitizenSignup from "./pages/CitizenSignup";
+import CitizenDashboard from "./pages/CitizenDashboard";
 
-/* Citizen */
-import CitizenLogin from "./CitizenLogin";
-import CitizenSignup from "./CitizenSignup";
-import CitizenDashboard from "./CitizenDashboard";
+import ContractorLogin from "./pages/ContractorLogin";
+import ContractorSignup from "./pages/ContractorSignup";
+import ContractorDashboard from "./pages/ContractorDashboard";
+import AddProject from "./pages/AddProject";
+import UploadProgress from "./pages/UploadProgress";
+import ProjectImages from "./pages/ProjectImages";
+import EditProject from "./pages/EditProject";
 
-/* Contractor */
-import ContractorLogin from "./ContractorLogin";
-import ContractorSignup from "./ContractorSignup";
-import ContractorDashboard from "./ContractorDashboard";
+import AuthorityLogin from "./pages/AuthorityLogin";
+import AdminDashboard from "./pages/AdminDashboard";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-
-        {/* HOME */}
-        <Route path="/" element={<Home />} />
+        {/* LANDING */}
+        <Route path="/" element={<Landing />} />
 
         {/* CITIZEN */}
         <Route path="/citizen/login" element={<CitizenLogin />} />
@@ -30,7 +32,24 @@ function App() {
         <Route path="/contractor/login" element={<ContractorLogin />} />
         <Route path="/contractor/signup" element={<ContractorSignup />} />
         <Route path="/contractor/dashboard" element={<ContractorDashboard />} />
+        <Route path="/contractor/add-project" element={<AddProject />} />
 
+        <Route
+          path="/contractor/project/:projectId/upload"
+          element={<UploadProgress />}
+        />
+        <Route
+          path="/contractor/project/:projectId/images"
+          element={<ProjectImages />}
+        />
+        <Route
+          path="/contractor/project/:projectId/edit"
+          element={<EditProject />}
+        />
+
+        {/* AUTHORITY */}
+        <Route path="/admin" element={<AuthorityLogin />} />
+        <Route path="/admin1" element={<AdminDashboard />} />
       </Routes>
     </BrowserRouter>
   );
