@@ -252,3 +252,86 @@ app.post("/contractor/signup", (_, res) => res.json({ success: true }));
 app.listen(5000, () =>
   console.log("Server running → http://localhost:5000")
 );
+
+
+/* ================================
+   FEEDBACK / COMPLAINTS
+================================ */
+let projectFeedbacks = [];
+
+app.post("/citizen/project/:id/feedback", upload.single("photo"), async (req, res) => {
+  try {
+    const projectId = Number(req.params.id);
+    const { username, message, type } = req.body;
+
+    let imageUrl = null;
+
+    if (req.file) {
+      const driveResponse = await drive.files.create({
+        requestBody: { name: req.file.originalname },
+        media: {
+          mimeType: req.file.mimetype,
+          body: fs.createReadStream(req.file.path),
+        },
+      });
+
+      const fileId = driveResponse.data.id;
+
+      await drive.permissions.create({
+        fileId,
+        requestBody: { role: "reader", type: "anyone" },
+      });
+
+      fs.unlinkSync(req.file.path);
+
+      imageUrl = `https://drive.google.com/thumbnail?id=${fileId}&sz=w800`;
+    }
+
+    const feedback = {
+      id: projectFeedbacks.length + 1,
+      projectId,
+      username,
+      message,
+      type, // feedback / complaint
+      imageUrl,
+      timestamp: new Date().toISOString(),
+    };
+
+    projectFeedbacks.push(feedback);
+
+    res.json({ success: true, feedback });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Feedback failed" });
+  }
+});
+
+/* Contractor can view feedback */
+app.get("/contractor/project/:id/feedback", (req, res) => {
+  const projectId = Number(req.params.id);
+  res.json(projectFeedbacks.filter(f => f.projectId === projectId));
+});
+
+app.get("/citizen/projects", (req, res) => {
+  const result = contractorProjects.map(p => {
+    const imgs = projectImages.filter(i => i.projectId === p.id);
+    return {
+      projectId: p.id,
+      description: p.description,
+      address: imgs[0]?.address || "Unknown",
+      thumbnail: imgs[0]?.imageUrl || "",
+    };
+  });
+  res.json(result);
+});
+
+let feedbacks = [];
+
+app.post("/citizen/feedback", (req, res) => {
+  feedbacks.push({
+    id: feedbacks.length + 1,
+    ...req.body,
+    timestamp: new Date(),
+  });
+  res.json({ success: true });
+});
