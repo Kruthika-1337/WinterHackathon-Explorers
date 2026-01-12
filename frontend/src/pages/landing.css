@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 
 :root {
   --primary: #1e3a8a;
@@ -9,11 +10,17 @@
 }
 
 * {
+=======
+* {
+  margin: 0;
+  padding: 0;
+>>>>>>> e5cfaddaee349cbfb94f09ddf256091e55439046
   box-sizing: border-box;
   font-family: "Segoe UI", sans-serif;
 }
 
 .landing {
+<<<<<<< HEAD
   font-family: "Inter", "Segoe UI", sans-serif;
   background: radial-gradient(
       circle at top right,
@@ -197,10 +204,86 @@
 .card h3,
 .card h4 {
   font-size: 18px;
+=======
+  background: #f7f9fc;
+  min-height: 100vh;
+}
+
+/* Navbar */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  padding: 20px 60px;
+  background: white;
+}
+
+.navbar span {
+  color: #2563eb;
+}
+
+.navbar ul {
+  display: flex;
+  gap: 25px;
+  list-style: none;
+  color: #666;
+  font-size: 14px;
+}
+
+/* Hero */
+.hero {
+  display: flex;
+  justify-content: space-between;
+  padding: 60px;
+}
+
+/* Left */
+.hero-left {
+  width: 55%;
+}
+
+.hero-left h1 {
+  font-size: 42px;
+  line-height: 1.2;
+  margin-bottom: 20px;
+}
+
+.hero-left span {
+  color: #2563eb;
+}
+
+.hero-left p {
+  color: #555;
+  max-width: 520px;
+  margin-bottom: 20px;
+}
+
+.badges span {
+  margin-right: 15px;
+  font-size: 14px;
+}
+
+/* Cards */
+.cards {
+  display: flex;
+  gap: 25px;
+  margin-top: 30px;
+}
+
+.card {
+  background: white;
+  padding: 25px;
+  border-radius: 12px;
+  width: 280px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+}
+
+.card h3 {
+>>>>>>> e5cfaddaee349cbfb94f09ddf256091e55439046
   margin-bottom: 10px;
 }
 
 .card p {
+<<<<<<< HEAD
   font-size: 14px;
   color: var(--text-muted);
   line-height: 1.5;
@@ -275,4 +358,63 @@
   );
   color: white;
   box-shadow: 0 8px 25px rgba(25, 118, 210, 0.5);
+=======
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 15px;
+}
+
+.card button {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  margin-top: 10px;
+  font-weight: 600;
+}
+
+/* Buttons */
+.blue {
+  background: #2563eb;
+  color: white;
+}
+
+.orange {
+  background: #f97316;
+  color: white;
+}
+
+.outline {
+  background: white;
+  border: 2px solid #2563eb;
+  color: #2563eb;
+>>>>>>> e5cfaddaee349cbfb94f09ddf256091e55439046
+}
+
+.orange-outline {
+  border-color: #f97316;
+  color: #f97316;
+}
+
+/* Right */
+.hero-right {
+  position: relative;
+}
+
+.hero-right img {
+  width: 300px;
+  height:450px;
+  border-radius: 20px;
+}
+
+.verified-badge {
+  position: absolute;
+  bottom: 20px;
+  left: 100px;
+  background: #22c55e;
+  color: white;
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: 12px;
 }

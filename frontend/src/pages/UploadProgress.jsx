@@ -1,3 +1,4 @@
+// UploadProgress.jsx
 import { useParams, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import "./UploadProgress.css";
@@ -48,9 +49,7 @@ function UploadProgress() {
         const formData = new FormData();
         formData.append("photo", photo);
         formData.append("projectId", projectId);
-        formData.append("latitude", location.lat);
-        formData.append("longitude", location.lng);
-        formData.append("timestamp", new Date().toISOString());
+        formData.append("contractorName", "Contractor"); // replace later when login works
 
         const res = await fetch("http://localhost:5000/upload", {
           method: "POST",

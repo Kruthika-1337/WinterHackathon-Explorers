@@ -3,20 +3,29 @@ import { useNavigate } from "react-router-dom";
 import "./AddProject.css";
 
 function AddProject() {
+  const navigate = useNavigate();
+
   const [description, setDescription] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-
-  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-      await fetch("http://localhost:5000/contractor/project", {
+      setLoading(true);
+
+      const res = await fetch("http://localhost:5000/contractor/project", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ description, startDate, endDate }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          description,
+          startDate,
+          endDate,
+        }),
       });
 
       alert("✅ Project submitted for authority approval");
