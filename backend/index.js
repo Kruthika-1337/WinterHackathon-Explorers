@@ -2,7 +2,6 @@ const express = require("express");
 const cors = require("cors");
 const multer = require("multer");
 const fs = require("fs");
-const axios = require("axios");
 const { google } = require("googleapis");
 require("dotenv").config();
 
@@ -22,9 +21,7 @@ const upload = multer({ dest: "uploads/" });
 /* ================================
    GOOGLE DRIVE AUTH
 ================================ */
-const oauthClientData = JSON.parse(
-  fs.readFileSync("oauth-client.json")
-);
+const oauthClientData = JSON.parse(fs.readFileSync("oauth-client.json"));
 
 const oauth2Client = new google.auth.OAuth2(
   oauthClientData.web.client_id,
@@ -54,30 +51,6 @@ app.get("/", (_, res) => {
 });
 
 /* ================================
-   GET ADDRESS FROM IP
-================================ */
-async function getAddressFromIP(ip) {
-  try {
-    const geo = await axios.get(`https://ipapi.co/${ip}/json/`);
-    const { latitude, longitude } = geo.data;
-
-    const res = await axios.get(
-      `https://maps.googleapis.com/maps/api/geocode/json`,
-      {
-        params: {
-          latlng: `${latitude},${longitude}`,
-          key: process.env.GOOGLE_MAPS_API_KEY,
-        },
-      }
-    );
-
-    return res.data.results[0]?.formatted_address || "Address unavailable";
-  } catch {
-    return "Address unavailable";
-  }
-}
-
-/* ================================
    UPLOAD IMAGE + ADDRESS
 ================================ */
 app.post("/upload", upload.single("photo"), async (req, res) => {
@@ -87,11 +60,12 @@ app.post("/upload", upload.single("photo"), async (req, res) => {
     }
 
     const projectId = Number(req.body.projectId);
+    const address = req.body.address; // 🔥 ACTUAL ADDRESS
     const timestamp = new Date().toISOString();
 
-    // 🔥 Get address automatically
-    const userIP = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
-    const address = await getAddressFromIP(userIP);
+    if (!address) {
+      return res.status(400).json({ error: "Address is required" });
+    }
 
     const driveResponse = await drive.files.create({
       requestBody: { name: req.file.originalname },
@@ -113,7 +87,6 @@ app.post("/upload", upload.single("photo"), async (req, res) => {
     const imageData = {
       id: projectImages.length + 1,
       projectId,
-      driveFileId: fileId,
       imageUrl: `https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`,
       address,
       timestamp,
@@ -132,13 +105,14 @@ app.post("/upload", upload.single("photo"), async (req, res) => {
    PROJECT ROUTES
 ================================ */
 app.post("/contractor/project", (req, res) => {
-  const { description, startDate, endDate } = req.body;
+  const { description, startDate, endDate, address } = req.body;
 
   const project = {
     id: contractorProjects.length + 1,
     description,
     startDate,
     endDate,
+    address, // 🔥 PROJECT LOCATION
   };
 
   contractorProjects.push(project);
@@ -158,6 +132,7 @@ app.put("/contractor/project/:id", (req, res) => {
   project.description = req.body.description;
   project.startDate = req.body.startDate;
   project.endDate = req.body.endDate;
+  project.address = req.body.address;
 
   res.json({ success: true, project });
 });
@@ -172,6 +147,21 @@ app.delete("/contractor/project/:id", (req, res) => {
 app.get("/contractor/project/:id/images", (req, res) => {
   const id = Number(req.params.id);
   res.json(projectImages.filter(img => img.projectId === id));
+});
+
+/* ================================
+   🔍 CITIZEN SEARCH BY ADDRESS
+================================ */
+app.get("/citizen/projects", (req, res) => {
+  const query = req.query.address?.toLowerCase();
+
+  if (!query) return res.json([]);
+
+  const results = contractorProjects.filter(p =>
+    p.address.toLowerCase().includes(query)
+  );
+
+  res.json(results);
 });
 
 /* ================================
