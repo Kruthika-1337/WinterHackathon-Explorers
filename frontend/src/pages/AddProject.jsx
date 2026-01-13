@@ -5,79 +5,52 @@ import "./AddProject.css";
 function AddProject() {
   const navigate = useNavigate();
 
-  const [description, setDescription] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState({
+    description: "",
+    contractorName: "",
+    companyName: "",
+    contractorPhone: "",
+    location: "",
+    budget: "",
+    startDate: "",
+    endDate: "",
+  });
+
+  const handleChange = (e) =>
+    setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    try {
-      setLoading(true);
+    await fetch("http://localhost:5000/contractor/project", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(form),
+    });
 
-      const res = await fetch("http://localhost:5000/contractor/project", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          description,
-          startDate,
-          endDate,
-        }),
-      });
-
-      alert("✅ Project submitted for authority approval");
-      navigate("/contractor/dashboard");
-    } catch (error) {
-      alert("❌ Something went wrong");
-    }
+    alert("✅ Project sent for authority approval");
+    navigate("/contractor/dashboard");
   };
 
   return (
     <div className="add-project-page">
       <div className="add-project-card">
-        <h2>Add New Project</h2>
-        <p className="subtitle">
-          Fill in project details. Uploads allowed only after authority approval.
-        </p>
+        <h2>Add Government Project</h2>
 
         <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>Project Description</label>
-            <textarea
-              placeholder="Eg: Road widening near City Circle"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              required
-            />
-          </div>
+          <input name="companyName" placeholder="Company Name" onChange={handleChange} required />
+          <input name="contractorName" placeholder="Contractor Name" onChange={handleChange} required />
+          <input name="contractorPhone" placeholder="Phone Number" onChange={handleChange} required />
+          <input name="location" placeholder="Construction Location" onChange={handleChange} required />
+          <input name="budget" placeholder="Estimated Budget (₹)" onChange={handleChange} required />
 
-          <div className="form-row">
-            <div className="form-group">
-              <label>Start Date</label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                required
-              />
-            </div>
+          <textarea name="description" placeholder="Project Description" onChange={handleChange} required />
 
-            <div className="form-group">
-              <label>End Date</label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                required
-              />
-            </div>
-          </div>
+          <input type="date" name="startDate" onChange={handleChange} required />
+          <input type="date" name="endDate" onChange={handleChange} required />
 
           <button type="submit" className="submit-btn">
-            🚀 Submit Project
+            Submit for Approval
           </button>
         </form>
       </div>

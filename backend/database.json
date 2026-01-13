@@ -1,0 +1,44 @@
+{
+  "contractorProjects": [
+    {
+      "id": 1,
+      "description": "oijlkcsd",
+      "contractorName": "esmn",
+      "companyName": "m,sdn",
+      "contractorPhone": "bmcnsa",
+      "location": "dnc m",
+      "budget": "ajnmd",
+      "startDate": "2026-01-14",
+      "endDate": "2026-01-14",
+      "status": "approved",
+      "progress": 40,
+      "latestImage": "http://localhost:5000/uploads/d02f92f6cbe4a2a60fca246b1ce7bbf5"
+    }
+  ],
+  "projectImages": [
+    {
+      "id": 1,
+      "projectId": 1,
+      "imageUrl": "http://localhost:5000/uploads/f3f714b9171e307b4b7727bf0efa05aa",
+      "timestamp": "2026-01-13T01:38:19.035Z"
+    },
+    {
+      "id": 2,
+      "projectId": 1,
+      "imageUrl": "http://localhost:5000/uploads/d02f92f6cbe4a2a60fca246b1ce7bbf5",
+      "timestamp": "2026-01-13T01:45:23.226Z"
+    }
+  ],
+  "complaints": [
+    {
+      "id": 1,
+      "projectId": 1,
+      "username": "Citizen",
+      "type": "complaint",
+      "message": "njwek",
+      "imageUrl": "http://localhost:5000/uploads/03671e77d95ca46130e2ce16e3d65e03",
+      "aiAnalysis": null,
+      "timestamp": "2026-01-13T01:39:58.382Z"
+    }
+  ]
+}

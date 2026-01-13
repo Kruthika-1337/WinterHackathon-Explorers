@@ -1,81 +1,118 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import "./CitizenDashboard.css";
 
 function CitizenDashboard() {
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(false);
-
+  const [projects, setProjects] = useState([]);
+  const [activeTab, setActiveTab] = useState("live");
   const navigate = useNavigate();
 
-  const handleSearch = async () => {
-    if (query.trim().length < 3) {
-      alert("Enter at least 3 characters");
-      return;
-    }
+  const user = JSON.parse(localStorage.getItem("user"));
+  const citizenName = user?.name || "Citizen";
 
-    setLoading(true);
-    setResults([]);
+  useEffect(() => {
+    fetch("http://localhost:5000/citizen/projects")
+      .then(res => res.json())
+      .then(setProjects)
+      .catch(console.error);
+  }, []);
 
-    try {
-      const res = await fetch(
-        `http://localhost:5000/citizen/search?q=${query}`
-      );
-
-      const data = await res.json();
-      setResults(data);
-    } catch (err) {
-      console.error("Search error:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const filtered =
+    activeTab === "live"
+      ? projects.filter(p => p.status !== "completed")
+      : projects.filter(p => p.status === "completed");
 
   return (
-    <div style={styles.container}>
-      <h2 style={styles.heading}>Citizen Dashboard 🏠</h2>
+    <div className="citizen-page">
 
-      <p>Search for works around your area:</p>
+      {/* TOP BAR */}
+      <div className="top-bar">
+        <h3>🏛 Government Portal</h3>
+        <div className="user-box">
+          🔔 <span>{citizenName}</span>
+        </div>
+      </div>
 
-      <div style={styles.searchContainer}>
-        <input
-          style={styles.input}
-          type="text"
-          placeholder="Enter your street / locality / landmark"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-        <button style={styles.button} onClick={handleSearch}>
-          Search
+      {/* GREETING */}
+      <div className="welcome">
+        <h2>Hi {citizenName},</h2>
+        <p>Track development projects around you</p>
+      </div>
+
+      {/* TABS */}
+      <div className="tabs">
+        <button
+          className={activeTab === "live" ? "active" : ""}
+          onClick={() => setActiveTab("live")}
+        >
+          Live Work
+        </button>
+        <button
+          className={activeTab === "completed" ? "active" : ""}
+          onClick={() => setActiveTab("completed")}
+        >
+          Completed
         </button>
       </div>
 
-      {loading && <p>Searching...</p>}
+      {/* PROJECTS */}
+      <div className="project-list">
+        {filtered.map(p => (
+          <div className="project-card" key={p.id}>
 
-      <div style={styles.results}>
-        {results.length === 0 && !loading && (
-          <p style={{ marginTop: "20px" }}>No matching works found yet.</p>
-        )}
+            {/* HEADER */}
+            <div className="project-header">
+              <h3>{p.description}</h3>
+              <span className={`badge ${p.status}`}>
+                {p.status.toUpperCase()}
+              </span>
+            </div>
 
-        {results.map((p) => (
-          <div key={p.projectId} style={styles.card}>
-            <img
-              src={p.thumbnail}
-              alt="thumb"
-              style={styles.thumb}
-            />
-            <div style={styles.info}>
-              <h4>{p.description}</h4>
-              <p>📍 {p.address}</p>
-              <p>👷 Contractor: {p.contractorName}</p>
+            {/* STAGES */}
+            <div className="stages">
+              {["Start", "Stage 1", "Stage 2", "Stage 3", "End"].map((s, i) => (
+                <div
+                  key={i}
+                  className={`stage ${p.progress >= (i + 1) * 20 ? "done" : ""}`}
+                >
+                  {s}
+                </div>
+              ))}
+            </div>
 
+            {/* IMAGES */}
+            <div className="image-row">
+              {p.latestImage ? (
+                <img src={p.latestImage} alt="progress" />
+              ) : (
+                <div className="no-image">No images yet</div>
+              )}
+            </div>
+
+            {/* DETAILS */}
+            <div className="details">
+              <p><strong>Company:</strong> {p.companyName}</p>
+              <p><strong>Contractor:</strong> {p.contractorName}</p>
+              <p><strong>Location:</strong> {p.location}</p>
+            </div>
+
+            {/* PROGRESS */}
+            <div className="progress-bar">
+              <div
+                className="progress-fill"
+                style={{ width: `${p.progress}%` }}
+              />
+            </div>
+            <small>{p.progress}% completed</small>
+
+            {/* ACTIONS */}
+            <div className="actions">
               <button
-                style={styles.viewBtn}
                 onClick={() =>
-                  navigate(`/citizen/project/${p.projectId}`)
+                  navigate(`/citizen/project/${p.id}/feedback`)
                 }
               >
-                View Details / Give Feedback
+                💬 Comment / Complaint
               </button>
             </div>
           </div>
@@ -84,51 +121,5 @@ function CitizenDashboard() {
     </div>
   );
 }
-
-const styles = {
-  container: { padding: "30px", fontFamily: "Arial" },
-  heading: { marginBottom: "15px" },
-  searchContainer: { display: "flex", gap: "10px" },
-  input: {
-    flex: 1,
-    padding: "8px",
-    borderRadius: "6px",
-    border: "1px solid #aaa",
-  },
-  button: {
-    padding: "8px 16px",
-    borderRadius: "6px",
-    backgroundColor: "#0077ff",
-    color: "white",
-    border: "none",
-    cursor: "pointer",
-  },
-  results: { marginTop: "25px" },
-  card: {
-    display: "flex",
-    gap: "15px",
-    border: "1px solid #ddd",
-    borderRadius: "8px",
-    padding: "10px",
-    marginBottom: "15px",
-    background: "#fafafa",
-  },
-  thumb: {
-    width: "110px",
-    height: "80px",
-    objectFit: "cover",
-    borderRadius: "6px",
-  },
-  info: { flex: 1 },
-  viewBtn: {
-    marginTop: "5px",
-    backgroundColor: "green",
-    color: "white",
-    padding: "6px 12px",
-    border: "none",
-    borderRadius: "6px",
-    cursor: "pointer",
-  },
-};
 
 export default CitizenDashboard;

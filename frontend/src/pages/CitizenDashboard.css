@@ -1,0 +1,141 @@
+.citizen-page {
+  background: #f4f6f8;
+  min-height: 100vh;
+  padding: 20px;
+  font-family: "Segoe UI", sans-serif;
+}
+
+/* TOP BAR */
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: white;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.user-box {
+  font-weight: 600;
+}
+
+/* GREETING */
+.welcome {
+  margin-bottom: 20px;
+}
+
+/* TABS */
+.tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.tabs button {
+  padding: 8px 18px;
+  border-radius: 20px;
+  border: none;
+  cursor: pointer;
+  background: #e5e7eb;
+}
+
+.tabs .active {
+  background: #2563eb;
+  color: white;
+}
+
+/* PROJECT CARD */
+.project-list {
+  display: grid;
+  gap: 20px;
+}
+
+.project-card {
+  background: white;
+  padding: 20px;
+  border-radius: 16px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+}
+
+.project-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* BADGE */
+.badge {
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+}
+
+.badge.approved { background: #22c55e; color: white; }
+.badge.pending { background: #f59e0b; color: white; }
+.badge.completed { background: #64748b; color: white; }
+
+/* STAGES */
+.stages {
+  display: flex;
+  gap: 6px;
+  margin: 12px 0;
+}
+
+.stage {
+  padding: 6px 10px;
+  background: #e5e7eb;
+  border-radius: 20px;
+  font-size: 12px;
+}
+
+.stage.done {
+  background: #2563eb;
+  color: white;
+}
+
+/* IMAGE */
+.image-row img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 12px;
+  margin: 10px 0;
+}
+
+.no-image {
+  height: 180px;
+  background: #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+}
+
+/* PROGRESS */
+.progress-bar {
+  background: #e5e7eb;
+  height: 10px;
+  border-radius: 10px;
+  margin-top: 10px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #2563eb, #1e40af);
+  border-radius: 10px;
+}
+
+/* ACTION */
+.actions {
+  margin-top: 15px;
+}
+
+.actions button {
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  cursor: pointer;
+}

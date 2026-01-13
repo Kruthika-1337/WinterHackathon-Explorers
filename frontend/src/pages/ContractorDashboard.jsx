@@ -6,7 +6,7 @@ function ContractorDashboard() {
   const navigate = useNavigate();
 
   const [projects, setProjects] = useState([]);
-  const [stats, setStats] = useState({}); // ✅ FIXED
+  const [stats, setStats] = useState({});
 
   useEffect(() => {
     const loadData = async () => {
@@ -27,7 +27,7 @@ function ContractorDashboard() {
             total: images.length,
             latestImage:
               images.length > 0 ? images[images.length - 1].imageUrl : null,
-            progress: Math.min(images.length * 20, 100), // 5 uploads = 100%
+            progress: Math.min(images.length * 20, 100),
           };
         }
 
@@ -42,7 +42,7 @@ function ContractorDashboard() {
 
   return (
     <div className="contractor-dashboard">
-      {/* Header */}
+      {/* HEADER */}
       <div className="dashboard-header">
         <div>
           <h2>👷 Contractor Dashboard</h2>
@@ -57,7 +57,7 @@ function ContractorDashboard() {
         </button>
       </div>
 
-      {/* Projects */}
+      {/* PROJECTS */}
       {projects.length === 0 ? (
         <p>No projects added yet.</p>
       ) : (
@@ -89,6 +89,7 @@ function ContractorDashboard() {
 
               <small>{stats[p.id]?.progress || 0}% completed</small>
 
+              {/* ACTION BUTTONS */}
               <div className="project-actions">
                 <button
                   onClick={() =>
@@ -104,6 +105,14 @@ function ContractorDashboard() {
                   }
                 >
                   View Images
+                </button>
+
+                <button
+                  onClick={() =>
+                    navigate(`/contractor/project/${p.id}/complaints`)
+                  }
+                >
+                  Complaints
                 </button>
               </div>
             </div>

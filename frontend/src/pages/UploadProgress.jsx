@@ -49,7 +49,8 @@ function UploadProgress() {
         const formData = new FormData();
         formData.append("photo", photo);
         formData.append("projectId", projectId);
-        formData.append("contractorName", "Contractor"); // replace later when login works
+        formData.append("latitude", location.lat);   // ✅ ADDED
+        formData.append("longitude", location.lng); // ✅ ADDED
 
         const res = await fetch("http://localhost:5000/upload", {
           method: "POST",
@@ -68,6 +69,7 @@ function UploadProgress() {
       setMessage("✅ Progress uploaded successfully");
       setTimeout(() => navigate("/contractor/dashboard"), 1500);
     } catch (err) {
+      console.error(err);
       setMessage("❌ Upload failed");
     } finally {
       setUploading(false);
@@ -83,15 +85,8 @@ function UploadProgress() {
         </p>
 
         <div className="location-box">
-          <button onClick={getLocation}>
-            📍 Capture Location
-          </button>
-
-          {location && (
-            <span className="location-ok">
-              ✔ Location Locked
-            </span>
-          )}
+          <button onClick={getLocation}>📍 Capture Location</button>
+          {location && <span className="location-ok">✔ Location Locked</span>}
         </div>
 
         <form onSubmit={handleUpload}>

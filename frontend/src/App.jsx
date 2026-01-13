@@ -15,6 +15,12 @@ import EditProject from "./pages/EditProject";
 
 import AuthorityLogin from "./pages/AuthorityLogin";
 import AdminDashboard from "./pages/AdminDashboard";
+import CitizenFeedback from "./pages/CitizenFeedback";
+import ContractorComplaints from "./pages/ContractorComplaints";
+
+
+
+
 
 function App() {
   return (
@@ -22,6 +28,14 @@ function App() {
       <Routes>
         {/* LANDING */}
         <Route path="/" element={<Landing />} />
+        <Route
+  path="/citizen/project/:id/feedback"
+  element={<CitizenFeedback />}
+/>
+<Route
+  path="/contractor/project/:projectId/complaints"
+  element={<ContractorComplaints />}
+/>
 
         {/* CITIZEN */}
         <Route path="/citizen/login" element={<CitizenLogin />} />
