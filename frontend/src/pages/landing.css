@@ -184,7 +184,8 @@
 }
 
 .card {
-  width: 270px;
+  width: 170px;
+  height:300px;
   padding: 26px;
   border-radius: 18px;
   background: linear-gradient(
@@ -206,7 +207,7 @@
   font-size: 18px;
 =======
   background: #f7f9fc;
-  min-height: 100vh;
+  min-height: -100vh;
 }
 
 /* Navbar */
