@@ -46,11 +46,7 @@ function Landing() {
      <nav className="navbar">
   <div className="nav-left">
     <h2>Work<span>Proof</span></h2>
-    <ul>
-      <li>Features</li>
-      <li>About</li>
-      <li>Contact</li>
-    </ul>
+   
   </div>
 
   <button
