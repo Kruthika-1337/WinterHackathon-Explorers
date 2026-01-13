@@ -16,6 +16,7 @@ app.use(express.json());
 ====================== */
 const UPLOAD_DIR = path.join(__dirname, "uploads");
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR);
+
 app.use("/uploads", express.static(UPLOAD_DIR));
 
 const upload = multer({ dest: UPLOAD_DIR });
@@ -50,7 +51,7 @@ app.post("/contractor/project", (req, res) => {
   const project = {
     id: contractorProjects.length + 1,
     ...req.body,
-    status: "pending",     // pending → approved → completed
+    status: "pending", // pending → approved → completed
     progress: 0,
     latestImage: null,
   };
@@ -109,7 +110,8 @@ app.post("/upload", upload.single("photo"), (req, res) => {
       });
     }
 
-    const imageUrl = `/uploads/${req.file.filename}`;
+    // ✅ FULL IMAGE URL (FIX)
+    const imageUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
 
     const image = {
       id: projectImages.length + 1,
@@ -135,7 +137,7 @@ app.post("/upload", upload.single("photo"), (req, res) => {
 });
 
 /* ======================
-   GET PROJECT IMAGES (CONTRACTOR)
+   GET PROJECT IMAGES
 ====================== */
 app.get("/contractor/project/:id/images", (req, res) => {
   const projectId = Number(req.params.id);
@@ -170,7 +172,8 @@ Return ONLY valid JSON:
     ]);
 
     return JSON.parse(result.response.text());
-  } catch {
+  } catch (err) {
+    console.error("Gemini Error:", err);
     return null;
   }
 }
@@ -207,8 +210,9 @@ app.post(
       return res.status(400).json({ error: "Message required" });
     }
 
+    // ✅ FULL IMAGE URL (FIX)
     const imageUrl = req.file
-      ? `/uploads/${req.file.filename}`
+      ? `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`
       : null;
 
     const aiAnalysis = req.file

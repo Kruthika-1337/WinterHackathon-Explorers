@@ -7,24 +7,30 @@ function CitizenFeedback() {
   const [file, setFile] = useState(null);
 
   const submit = async () => {
-    console.log("Citizen submitting complaint for project:", id);
+  if (!message) {
+    alert("Message required");
+    return;
+  }
 
-    const formData = new FormData();
-    formData.append("message", message);
-    formData.append("username", "Citizen");
-    formData.append("type", "complaint");
+  const formData = new FormData();
+  formData.append("message", message);
+  formData.append("username", "Citizen");
+  formData.append("type", "complaint");
 
-    if (file) formData.append("photo", file);
+  if (file) formData.append("photo", file);
 
-    await fetch(`http://localhost:5000/citizen/project/${id}/feedback`, {
-      method: "POST",
-      body: formData,
-    });
+  const res = await fetch(
+    `http://localhost:5000/citizen/project/${id}/feedback`,
+    { method: "POST", body: formData }
+  );
 
-    alert("Complaint submitted");
-    setMessage("");
-    setFile(null);
-  };
+  const data = await res.json();
+  console.log("Complaint saved:", data);
+
+  alert("Complaint submitted");
+  setMessage("");
+  setFile(null);
+};
 
   return (
     <div style={{ padding: 30 }}>
