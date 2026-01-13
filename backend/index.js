@@ -4,6 +4,7 @@ const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
 require("dotenv").config();
+
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const app = express();
@@ -11,7 +12,7 @@ app.use(cors());
 app.use(express.json());
 
 /* ======================
-   FILE STORAGE
+   STORAGE SETUP
 ====================== */
 const UPLOAD_DIR = path.join(__dirname, "uploads");
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR);
@@ -20,7 +21,7 @@ app.use("/uploads", express.static(UPLOAD_DIR));
 const upload = multer({ dest: UPLOAD_DIR });
 
 /* ======================
-   GEMINI SETUP
+   GEMINI SETUP (OPTIONAL)
 ====================== */
 let model = null;
 if (process.env.GEMINI_API_KEY) {
@@ -49,7 +50,7 @@ app.post("/contractor/project", (req, res) => {
   const project = {
     id: contractorProjects.length + 1,
     ...req.body,
-    status: "pending",      // 🔴 IMPORTANT
+    status: "pending",     // pending → approved → completed
     progress: 0,
     latestImage: null,
   };
@@ -59,14 +60,14 @@ app.post("/contractor/project", (req, res) => {
 });
 
 /* ======================
-   CONTRACTOR PROJECTS
+   GET CONTRACTOR PROJECTS
 ====================== */
 app.get("/contractor/projects", (_, res) => {
   res.json(contractorProjects);
 });
 
 /* ======================
-   ADMIN – VIEW PENDING
+   ADMIN – VIEW PENDING PROJECTS
 ====================== */
 app.get("/admin/projects", (_, res) => {
   res.json(contractorProjects.filter(p => p.status === "pending"));
@@ -84,88 +85,61 @@ app.put("/admin/project/:id/approve", (req, res) => {
     return res.status(404).json({ error: "Project not found" });
   }
 
-  project.status = "approved"; // ✅ AUTHORITY APPROVAL
+  project.status = "approved";
   res.json({ success: true });
 });
 
 /* ======================
    CONTRACTOR IMAGE UPLOAD
-   🔐 AUTHORITY CHECK
+   🔒 BLOCKED UNTIL APPROVED
 ====================== */
 app.post("/upload", upload.single("photo"), (req, res) => {
-  const projectId = Number(req.body.projectId);
+  try {
+    const projectId = Number(req.body.projectId);
 
-  if (!projectId || !req.file) {
-    return res.status(400).json({ error: "Invalid upload" });
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+
+    const project = contractorProjects.find(p => p.id === projectId);
+
+    if (!project || project.status !== "approved") {
+      return res.status(403).json({
+        error: "Project not approved by authority yet",
+      });
+    }
+
+    const imageUrl = `/uploads/${req.file.filename}`;
+
+    const image = {
+      id: projectImages.length + 1,
+      projectId,
+      imageUrl,
+      timestamp: new Date().toISOString(),
+    };
+
+    projectImages.push(image);
+
+    project.latestImage = imageUrl;
+    project.progress = Math.min(project.progress + 20, 100);
+
+    if (project.progress === 100) {
+      project.status = "completed";
+    }
+
+    res.json({ success: true, image });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Upload failed" });
   }
-
-  const project = contractorProjects.find(p => p.id === projectId);
-
-  if (!project) {
-    return res.status(404).json({ error: "Project not found" });
-  }
-
-  // 🔴 BLOCK UPLOAD BEFORE APPROVAL
-  if (project.status !== "approved") {
-    return res.status(403).json({
-      error: "Project not approved by authority yet"
-    });
-  }
-
-  const imageUrl = `http://localhost:5000/uploads/${req.file.filename}`;
-
-  const image = {
-    id: projectImages.length + 1,
-    projectId,
-    imageUrl,
-    latitude: req.body.latitude || null,
-    longitude: req.body.longitude || null,
-    timestamp: new Date().toISOString(),
-  };
-
-  projectImages.push(image);
-
-  project.latestImage = imageUrl;
-  project.progress = Math.min(project.progress + 20, 100);
-
-  if (project.progress === 100) {
-    project.status = "completed";
-  }
-
-  res.json({ success: true, image });
 });
 
 /* ======================
-   PROJECT IMAGES (CONTRACTOR)
+   GET PROJECT IMAGES (CONTRACTOR)
 ====================== */
 app.get("/contractor/project/:id/images", (req, res) => {
   const projectId = Number(req.params.id);
   res.json(projectImages.filter(i => i.projectId === projectId));
-});
-
-/* ======================
-   CITIZEN PROJECT VIEW
-====================== */
-app.get("/citizen/projects", (_, res) => {
-  const data = contractorProjects.map(p => {
-    const contractorImage = projectImages
-      .filter(i => i.projectId === p.id)
-      .at(-1);
-
-    const complaintImage = complaints
-      .filter(c => c.projectId === p.id && c.imageUrl)
-      .at(-1);
-
-    return {
-      ...p,
-      latestImage:
-        contractorImage?.imageUrl ||
-        complaintImage?.imageUrl ||
-        null,
-    };
-  });
-
-  res.json(data);
 });
 
 /* ======================
@@ -179,7 +153,7 @@ async function analyzeImage(imagePath) {
 
     const result = await model.generateContent([
       `
-Return ONLY JSON:
+Return ONLY valid JSON:
 {
   "hasPothole": true | false,
   "severity": "low" | "medium" | "high",
@@ -202,6 +176,24 @@ Return ONLY JSON:
 }
 
 /* ======================
+   CITIZEN VIEW PROJECTS
+====================== */
+app.get("/citizen/projects", (_, res) => {
+  const data = contractorProjects.map(p => {
+    const lastImage = projectImages
+      .filter(i => i.projectId === p.id)
+      .at(-1);
+
+    return {
+      ...p,
+      latestImage: lastImage?.imageUrl || null,
+    };
+  });
+
+  res.json(data);
+});
+
+/* ======================
    CITIZEN COMPLAINT
 ====================== */
 app.post(
@@ -216,7 +208,7 @@ app.post(
     }
 
     const imageUrl = req.file
-      ? `http://localhost:5000/uploads/${req.file.filename}`
+      ? `/uploads/${req.file.filename}`
       : null;
 
     const aiAnalysis = req.file
