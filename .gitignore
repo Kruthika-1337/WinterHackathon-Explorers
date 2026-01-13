@@ -28,3 +28,6 @@ dist-ssr
 *backend/oauth-client.json
 *token.json
 *uploads/
+backend/serviceAccountKey.json
+*.json
+.env
